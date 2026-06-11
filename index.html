@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Édition Live Calendrier</title>
+    <title>Le Planning des Jeudis : Communauté Live</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -55,7 +55,7 @@
         .nav-btn:hover:not(.active) { background-color: rgba(255, 255, 255, 0.05); color: white; }
 
         .main-content { flex: 1; padding: 40px 50px; overflow-y: auto; max-width: 1400px; margin: 0 auto; width: 100%; }
-        .header-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; gap: 15px; }
+        .header-status { display: flex; justify-content: space-between; align-items: center; margin-bottom: 35px; gap: 15px; flex-wrap: wrap; }
         
         h1 {
             margin: 0; font-size: 2rem; font-weight: 800; letter-spacing: -1px;
@@ -63,18 +63,16 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .month-selector-wrapper {
+        .selectors-group { display: flex; gap: 15px; align-items: center; flex-wrap: wrap; }
+
+        .selector-wrapper {
             display: flex; align-items: center; gap: 10px; background: white;
-            padding: 6px 14px; border-radius: 14px; box-shadow: var(--card-shadow);
+            padding: 8px 16px; border-radius: 14px; box-shadow: var(--card-shadow);
             border: 1px solid #e2e8f0;
         }
-
-        .month-selector-wrapper label { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
-
-        .month-select {
-            border: none; background: transparent; font-size: 1rem; font-weight: 800;
-            color: #0284c7; cursor: pointer; outline: none; padding-right: 5px;
-        }
+        .selector-wrapper label { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
+        .selector-wrapper select { border: none; background: transparent; font-size: 1rem; font-weight: 800; color: #0284c7; cursor: pointer; outline: none; }
+        .selector-wrapper select.user-select { color: #059669; }
 
         .page-section { display: none; }
         .page-section.active { display: block; }
@@ -87,18 +85,25 @@
         .input-group input { border: none; background: transparent; width: 100%; font-size: 0.95rem; color: var(--text-main); font-weight: 600; }
         .input-group input:focus { outline: none; }
 
-        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 24px; }
-        .semaine-card { border-radius: 24px; color: white; padding: 24px; display: flex; flex-direction: column; gap: 16px; }
-        .card-header { font-size: 1.15rem; font-weight: 800; display: flex; justify-content: space-between; }
+        .cards-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+        .semaine-card { border-radius: 24px; color: white; padding: 24px; display: flex; flex-direction: column; gap: 14px; position: relative; }
+        .card-header { font-size: 1.1rem; font-weight: 800; display: flex; justify-content: space-between; align-items: center; }
         
-        .role-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.08); padding: 12px 16px; border-radius: 14px; }
-        .role-label { font-size: 0.75rem; font-weight: 700; text-transform: uppercase; opacity: 0.7; margin-bottom: 4px; }
-        .role-name { font-size: 1.05rem; font-weight: 700; }
+        .role-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.08); padding: 10px 14px; border-radius: 14px; }
+        .role-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; opacity: 0.7; margin-bottom: 2px; }
+        .role-name { font-size: 1rem; font-weight: 700; }
 
-        .rating-box { display: flex; flex-direction: column; gap: 6px; }
-        .stars { display: flex; gap: 8px; font-size: 1.4rem; cursor: pointer; }
+        .presence-zone { background: rgba(0, 0, 0, 0.15); border-radius: 14px; padding: 12px; font-size: 0.85rem; }
+        .presence-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 700; }
+        .presence-btn { background: white; color: #0f172a; border: none; padding: 4px 10px; border-radius: 8px; font-weight: 800; font-size: 0.75rem; cursor: pointer; }
+        .presence-btn.active { background: #22c55e; color: white; }
+        .presence-list { opacity: 0.85; font-size: 0.78rem; word-break: break-word; }
+
+        .rating-box { display: flex; align-items: center; justify-content: space-between; background: rgba(255, 255, 255, 0.05); padding: 8px 12px; border-radius: 12px; }
+        .stars { display: flex; gap: 4px; font-size: 1.2rem; cursor: pointer; }
         .star { color: rgba(255, 255, 255, 0.25); }
         .star.active { color: #facc15; }
+        .avg-rating { font-size: 0.8rem; font-weight: 700; background: rgba(255,255,255,0.2); padding: 2px 6px; border-radius: 6px; }
 
         .stats-container { background: white; border-radius: 24px; padding: 30px; box-shadow: var(--card-shadow); overflow-x: auto; }
         .stats-table { width: 100%; border-collapse: collapse; }
@@ -138,11 +143,16 @@
 
     <div class="main-content">
         <div class="header-status">
-            <h1>Workspace Culinary Hub</h1>
+            <h1>Culinary Workspace</h1>
             
-            <div style="display: flex; gap: 15px; align-items: center;">
-                <div class="month-selector-wrapper">
-                    <label for="monthSelect">Mois :</label>
+            <div class="selectors-group">
+                <div class="selector-wrapper">
+                    <label for="userSelect">👤 Profil :</label>
+                    <select id="userSelect" class="month-select user-select"></select>
+                </div>
+
+                <div class="selector-wrapper">
+                    <label for="monthSelect">📅 Mois :</label>
                     <select id="monthSelect" class="month-select">
                         <option value="2026-06">Juin</option>
                         <option value="2026-07">Juillet</option>
@@ -158,7 +168,7 @@
 
         <div id="page-aperçu" class="page-section active">
             <div class="section-panel">
-                <div class="panel-title">👥 Équipe de cuisine (Modifs en direct sur ce mois)</div>
+                <div class="panel-title">👥 Équipe de cuisine (Modifs des prénoms globales)</div>
                 <div class="inputs-grid" id="inputsContainer"></div>
             </div>
             <h2 id="planningTitle" style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Les Jeudis de Juin</h2>
@@ -168,7 +178,7 @@
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Classement de Juin</h2>
-                <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne du plat principal sur le mois sélectionné.</p>
+                <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne globale donnée par l'équipe.</p>
                 <table class="stats-table">
                     <thead>
                         <tr><th style="width: 80px;">Rang</th><th>Nom</th><th>Score Moyen</th><th>Prestations</th></tr>
@@ -183,7 +193,6 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Configuration Firebase automatique
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAF1v0QNw9h5spegq7lV2-zE",
         authDomain: "planning-jeudi.firebaseapp.com",
@@ -196,19 +205,23 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const baseRotation = [
-        { plat: 1, dessert: 2, remp: 3 },
-        { plat: 4, dessert: 5, remp: 6 },
-        { plat: 7, dessert: 8, remp: 9 },
-        { plat: 10, dessert: 1, remp: 2 },
-        { plat: 3, dessert: 4, remp: 5 }
-    ];
     const emojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦊", "🦄", "🦅"];
     let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
     
     let participants = [...defaultParticipants];
-    let ratings = [0, 0, 0, 0, 0];
+    
+    // Structure de données évoluée : un tableau d'objets pour chaque jeudi du mois
+    // Chaque jeudi possède une liste de votes { Prénom: Note } et de présences [Prénoms...]
+    let thursdaysData = [
+        { ratings: {}, presence: [] },
+        { ratings: {}, presence: [] },
+        { ratings: {}, presence: [] },
+        { ratings: {}, presence: [] },
+        { ratings: {}, presence: [] }
+    ];
+
     let currentMonth = "2026-06";
+    let currentUser = "Lucas"; // Utilisateur connecté par défaut
     let unsubscribe = null;
 
     const monthNames = {
@@ -216,24 +229,31 @@
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
 
-    // 📅 Fonction magique qui trouve les vraies dates des Jeudis du mois choisi
-    function getThursdaysInMonth(year, monthIndex) {
-        let date = new Date(year, monthIndex, 1);
-        let thursdays = [];
+    function getThursdaysInMonthWithGlobalIndex(year, monthIndex) {
+        let date = new Date(year, 0, 1);
+        let thursdaysCount = 0;
+        let thursdaysInRequestedMonth = [];
         
-        // On cherche le premier jeudi
-        while (date.getDay() !== 4) {
+        while (date.getFullYear() === year) {
+            if (date.getDay() === 4) {
+                if (date.getMonth() === monthIndex) {
+                    thursdaysInRequestedMonth.push({
+                        dateText: `Jeudi ${date.getDate()} ${monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`]}`,
+                        globalIndex: thursdaysCount
+                    });
+                }
+                thursdaysCount++;
+            }
             date.setDate(date.getDate() + 1);
         }
-        
-        // On récupère tous les jeudis de ce mois
-        while (date.getMonth() === monthIndex) {
-            let dayStr = date.getDate();
-            let monthStr = monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`];
-            thursdays.push(`Jeudi ${dayStr} ${monthStr}`);
-            date.setDate(date.getDate() + 7);
-        }
-        return thursdays;
+        return thursdaysInRequestedMonth;
+    }
+
+    function getRolesForGlobalIndex(globalIndex, totalMembers) {
+        const plat = (globalIndex * 3) % totalMembers;
+        const dessert = (globalIndex * 3 + 1) % totalMembers;
+        const remp = (globalIndex * 3 + 2) % totalMembers;
+        return { plat, dessert, remp };
     }
 
     window.switchPage = function(pageId) {
@@ -251,6 +271,11 @@
         connectToMonth(currentMonth);
     });
 
+    document.getElementById('userSelect').addEventListener('change', (e) => {
+        currentUser = e.target.value;
+        generatePlanningCards();
+    });
+
     function connectToMonth(monthId) {
         if (unsubscribe) unsubscribe();
 
@@ -258,18 +283,45 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 participants = data.names || [...defaultParticipants];
-                ratings = data.ratings || [0, 0, 0, 0, 0];
+                thursdaysData = data.thursdaysData || [
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] }
+                ];
             } else {
                 participants = [...defaultParticipants];
-                ratings = [0, 0, 0, 0, 0];
-                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, ratings: ratings });
+                thursdaysData = [
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] }
+                ];
+                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, thursdaysData: thursdaysData });
             }
+            updateUserDropdown();
             initInputs();
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) {
                 generateStats();
             }
         });
+    }
+
+    function updateUserDropdown() {
+        const userSelect = document.getElementById('userSelect');
+        const previousSelection = userSelect.value || currentUser;
+        userSelect.innerHTML = '';
+        participants.forEach(name => {
+            const opt = document.createElement('option');
+            opt.value = name;
+            opt.innerText = name;
+            if(name === previousSelection) opt.selected = true;
+            userSelect.appendChild(opt);
+        });
+        currentUser = userSelect.value;
     }
 
     function initInputs() {
@@ -286,52 +338,113 @@
             
             document.getElementById(`input-chef-${index}`).addEventListener('blur', (e) => {
                 const idx = e.target.dataset.index;
-                participants[idx] = e.target.value || `Collaborateur ${parseInt(idx) + 1}`;
-                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants });
+                const oldName = participants[idx];
+                const newName = e.target.value || `Collaborateur ${parseInt(idx) + 1}`;
+                
+                participants[idx] = newName;
+                
+                // Mettre à jour le nom dans la liste des présences et des notes si nécessaire
+                thursdaysData.forEach(t => {
+                    if (t.ratings[oldName]) { t.ratings[newName] = t.ratings[oldName]; delete t.ratings[oldName]; }
+                    const pIdx = t.presence.indexOf(oldName);
+                    if (pIdx > -1) t.presence[pIdx] = newName;
+                });
+
+                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants, thursdaysData: thursdaysData });
             });
         });
     }
 
     window.rateWeekCloud = function(weekIndex, starRating) {
-        ratings[weekIndex] = starRating;
-        updateDoc(doc(db, "planning", `mois_${currentMonth}`), { ratings: ratings });
+        if(!thursdaysData[weekIndex].ratings) thursdaysData[weekIndex].ratings = {};
+        
+        // Enregistre le vote de l'utilisateur actuel
+        thursdaysData[weekIndex].ratings[currentUser] = starRating;
+        updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
+    }
+
+    window.togglePresence = function(weekIndex) {
+        if(!thursdaysData[weekIndex].presence) thursdaysData[weekIndex].presence = [];
+        
+        const presenceList = thursdaysData[weekIndex].presence;
+        const pIdx = presenceList.indexOf(currentUser);
+        
+        if (pIdx > -1) {
+            presenceList.splice(pIdx, 1); // Se désister
+        } else {
+            presenceList.push(currentUser); // S'inscrire
+        }
+        updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
     }
 
     function generatePlanningCards() {
         const cardsContainer = document.getElementById('cardsContainer');
         cardsContainer.innerHTML = '';
 
-        // On sépare l'année et le mois (ex: "2026-06" -> year: 2026, month: 5)
         const parts = currentMonth.split('-');
         const year = parseInt(parts[0]);
         const monthIndex = parseInt(parts[1]) - 1;
-        
-        // On génère la liste des vraies dates pour ce mois
-        const thursdaysDates = getThursdaysInMonth(year, monthIndex);
+        const thursdaysDates = getThursdaysInMonthWithGlobalIndex(year, monthIndex);
 
-        baseRotation.forEach((semaine, i) => {
-            // S'il n'y a que 4 jeudis ce mois-ci, on n'affiche pas de 5ème carte inutile
-            if (i >= thursdaysDates.length) return;
-
+        thursdaysDates.forEach((jeudiInfo, i) => {
             const card = document.createElement('div');
             card.className = `semaine-card sem-${i + 1}`;
             
-            const platName = participants[semaine.plat - 1] || '';
-            const dessertName = participants[semaine.dessert - 1] || '';
-            const rempName = participants[semaine.remp - 1] || '';
-            const currentRating = ratings[i];
+            const rotationIndex = getRolesForGlobalIndex(jeudiInfo.globalIndex, participants.length);
+            const platName = participants[rotationIndex.plat] || '';
+            const dessertName = participants[rotationIndex.dessert] || '';
+            const rempName = participants[rotationIndex.remp] || '';
+
+            // Sécurité structures de données
+            if(!thursdaysData[i]) thursdaysData[i] = { ratings: {}, presence: [] };
+            if(!thursdaysData[i].ratings) thursdaysData[i].ratings = {};
+            if(!thursdaysData[i].presence) thursdaysData[i].presence = [];
+
+            // Calcul de la moyenne des notes pour ce jeudi
+            const currentRatings = thursdaysData[i].ratings;
+            const voters = Object.keys(currentRatings);
+            let avgText = "Pas de note";
+            if (voters.length > 0) {
+                let total = voters.reduce((sum, voter) => sum + currentRatings[voter], 0);
+                avgText = `⭐ ${(total / voters.length).toFixed(1)} (${voters.length} v.)`;
+            }
+
+            // Note de l'utilisateur connecté
+            const userRating = currentRatings[currentUser] || 0;
 
             let starsHTML = '';
             for(let s = 1; s <= 5; s++) {
-                starsHTML += `<span class="star ${s <= currentRating ? 'active' : ''}" onclick="rateWeekCloud(${i}, ${s})">★</span>`;
+                starsHTML += `<span class="star ${s <= userRating ? 'active' : ''}" onclick="rateWeekCloud(${i}, ${s})">★</span>`;
             }
 
+            // Présences
+            const currentPresence = thursdaysData[i].presence;
+            const isPresent = currentPresence.includes(currentUser);
+            const presenceListText = currentPresence.length > 0 ? currentPresence.join(', ') : "Personne pour le moment";
+
             card.innerHTML = `
-                <div class="card-header"><span>${thursdaysDates[i]}</span><span style="font-size:0.75rem; opacity:0.6;">2026</span></div>
+                <div class="card-header">
+                    <span>${jeudiInfo.dateText}</span>
+                    <span class="avg-rating">${avgText}</span>
+                </div>
                 <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
                 <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
                 <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
-                <div class="rating-box"><span class="role-label">Évaluer le repas</span><div class="stars">${starsHTML}</div></div>
+                
+                <div class="presence-zone">
+                    <div class="presence-header">
+                        <span>🙋‍♂️ Présents (${currentPresence.length}) :</span>
+                        <button class="presence-btn ${isPresent ? 'active' : ''}" onclick="togglePresence(${i})">
+                            ${isPresent ? '✅ Présent' : '❌ Absent'}
+                        </button>
+                    </div>
+                    <div class="presence-list">${presenceListText}</div>
+                </div>
+
+                <div class="rating-box">
+                    <span class="role-label">Ta note :</span>
+                    <div class="stars">${starsHTML}</div>
+                </div>
             `;
             cardsContainer.appendChild(card);
         });
@@ -340,20 +453,34 @@
     function generateStats() {
         const tbody = document.getElementById('statsTableBody');
         tbody.innerHTML = '';
-        let playerStats = participants.map(name => ({ name, totalStars: 0, repasComptes: 0 }));
+        let playerStats = participants.map(name => ({ name, totalMoyennes: 0, repasComptes: 0 }));
 
-        baseRotation.forEach((semaine, i) => {
-            const note = ratings[i];
-            if (note > 0) {
-                const chefIdx = semaine.plat - 1;
+        const parts = currentMonth.split('-');
+        const year = parseInt(parts[0]);
+        const monthIndex = parseInt(parts[1]) - 1;
+        const thursdaysDates = getThursdaysInMonthWithGlobalIndex(year, monthIndex);
+
+        thursdaysDates.forEach((jeudiInfo, i) => {
+            if(!thursdaysData[i] || !thursdaysData[i].ratings) return;
+            
+            const currentRatings = thursdaysData[i].ratings;
+            const voters = Object.keys(currentRatings);
+            
+            if (voters.length > 0) {
+                let totalJeudi = voters.reduce((sum, voter) => sum + currentRatings[voter], 0);
+                let moyenneJeudi = totalJeudi / voters.length;
+
+                const rotationIndex = getRolesForGlobalIndex(jeudiInfo.globalIndex, participants.length);
+                const chefIdx = rotationIndex.plat;
+                
                 if(playerStats[chefIdx]) {
-                    playerStats[chefIdx].totalStars += note;
+                    playerStats[chefIdx].totalMoyennes += moyenneJeudi;
                     playerStats[chefIdx].repasComptes += 1;
                 }
             }
         });
 
-        playerStats.forEach(p => { p.moyenne = p.repasComptes > 0 ? (p.totalStars / p.repasComptes).toFixed(1) : "N/A"; });
+        playerStats.forEach(p => { p.moyenne = p.repasComptes > 0 ? (p.totalMoyennes / p.repasComptes).toFixed(1) : "N/A"; });
         playerStats.sort((a, b) => {
             if (a.moyenne === "N/A") return 1; if (b.moyenne === "N/A") return -1;
             return parseFloat(b.moyenne) - parseFloat(a.moyenne);

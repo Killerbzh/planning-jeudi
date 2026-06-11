@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Édition Live Cloud</title>
+    <title>Le Planning des Jeudis : Édition Live Mensuelle</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -14,16 +14,11 @@
             --text-main: #0f172a;
             --text-muted: #64748b;
             
-            --grad-1: linear-gradient(135deg, #0f172a, #1e293b);
-            --grad-2: linear-gradient(135deg, #0284c7, #0369a1);
-            --grad-3: linear-gradient(135deg, #b45309, #78350f);
-            --grad-4: linear-gradient(135deg, #047857, #065f46);
-            --grad-5: linear-gradient(135deg, #be123c, #9f1239);
-            --grad-6: linear-gradient(135deg, #6d28d9, #5b21b6);
-            --grad-7: linear-gradient(135deg, #a21caf, #86198f);
-            --grad-8: linear-gradient(135deg, #c2410c, #9a3412);
-            --grad-9: linear-gradient(135deg, #1d4ed8, #1e40af);
-            --grad-10: linear-gradient(135deg, #374151, #1f2937);
+            --grad-1: linear-gradient(135deg, #0284c7, #0369a1);
+            --grad-2: linear-gradient(135deg, #b45309, #78350f);
+            --grad-3: linear-gradient(135deg, #047857, #065f46);
+            --grad-4: linear-gradient(135deg, #be123c, #9f1239);
+            --grad-5: linear-gradient(135deg, #6d28d9, #5b21b6);
         }
 
         *, *::before, *::after { box-sizing: border-box; }
@@ -53,6 +48,7 @@
             border-radius: 12px; background: transparent; border: none;
             color: var(--sidebar-text); font-weight: 600; font-size: 0.95rem;
             cursor: pointer; text-align: left; transition: all 0.3s ease;
+            width: 100%;
         }
 
         .nav-btn.active { background-color: rgba(56, 189, 248, 0.1); color: var(--sidebar-active); }
@@ -67,10 +63,17 @@
             -webkit-background-clip: text; -webkit-text-fill-color: transparent;
         }
 
-        .status-badge {
-            background-color: #e0f2fe; color: #0369a1; padding: 10px 20px;
-            border-radius: 99px; font-size: 0.85rem; font-weight: 700;
-            border: 1px solid #bae6fd; white-space: nowrap;
+        .month-selector-wrapper {
+            display: flex; align-items: center; gap: 10px; background: white;
+            padding: 6px 14px; border-radius: 14px; box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+        }
+
+        .month-selector-wrapper label { font-weight: 700; font-size: 0.85rem; color: var(--text-muted); text-transform: uppercase; }
+
+        .month-select {
+            border: none; background: transparent; font-size: 1rem; font-weight: 800;
+            color: #0284c7; cursor: pointer; outline: none; padding-right: 5px;
         }
 
         .page-section { display: none; }
@@ -112,19 +115,16 @@
             .sidebar { position: fixed; bottom: 0; left: 0; right: 0; width: 100%; height: 70px; flex-direction: row; padding: 0 10px; justify-content: space-around; align-items: center; z-index: 1000; box-shadow: 0 -5px 25px rgba(0,0,0,0.15); gap: 0; }
             .logo-area { display: none; }
             .nav-btn { flex-direction: column; gap: 4px; padding: 8px; font-size: 0.75rem; text-align: center; flex: 1; justify-content: center; }
-            .nav-btn:nth-child(3) { display: none; }
             .main-content { padding: 20px 16px 90px 16px; }
             h1 { font-size: 1.5rem; }
-            .header-status { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .header-status { flex-direction: column; align-items: flex-start; gap: 12px; }
             .inputs-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
             .cards-grid { grid-template-columns: 1fr; }
         }
 
         .sem-1 { background: var(--grad-1); } .sem-2 { background: var(--grad-2); }
         .sem-3 { background: var(--grad-3); } .sem-4 { background: var(--grad-4); }
-        .sem-5 { background: var(--grad-5); } .sem-6 { background: var(--grad-6); }
-        .sem-7 { background: var(--grad-7); } .sem-8 { background: var(--grad-8); }
-        .sem-9 { background: var(--grad-9); } .sem-10 { background: var(--grad-10); }
+        .sem-5 { background: var(--grad-5); }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@500;700;800&display=swap" rel="stylesheet">
 </head>
@@ -139,22 +139,36 @@
     <div class="main-content">
         <div class="header-status">
             <h1>Workspace Culinary Hub</h1>
-            <div class="status-badge">☁️ Live Cloud Synchronisé</div>
+            
+            <div style="display: flex; gap: 15px; align-items: center;">
+                <div class="month-selector-wrapper">
+                    <label for="monthSelect">Mois :</label>
+                    <select id="monthSelect" class="month-select">
+                        <option value="2026-06">Juin</option>
+                        <option value="2026-07">Juillet</option>
+                        <option value="2026-08">Août</option>
+                        <option value="2026-09">Septembre</option>
+                        <option value="2026-10">Octobre</option>
+                        <option value="2026-11">Novembre</option>
+                        <option value="2026-12">Décembre</option>
+                    </select>
+                </div>
+            </div>
         </div>
 
         <div id="page-aperçu" class="page-section active">
             <div class="section-panel">
-                <div class="panel-title">👥 Équipe de cuisine (Modifs en direct sur tous les téléphones)</div>
+                <div class="panel-title">👥 Équipe de cuisine (Modifs en direct sur ce mois)</div>
                 <div class="inputs-grid" id="inputsContainer"></div>
             </div>
-            <h2 style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Calendrier des Rotations</h2>
+            <h2 id="planningTitle" style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Les Jeudis du Mois</h2>
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
         <div id="page-stats" class="page-section">
             <div class="stats-container">
-                <h2 style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Le Classement des Chefs</h2>
-                <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne du plat principal.</p>
+                <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Classement du Mois</h2>
+                <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne du plat principal sur le mois sélectionné.</p>
                 <table class="stats-table">
                     <thead>
                         <tr><th style="width: 80px;">Rang</th><th>Nom</th><th>Score Moyen</th><th>Prestations</th></tr>
@@ -169,7 +183,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Tes vraies clés Firebase automatiques 🚀
+    // Tes clés de configuration
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAF1v0QNw9h5spegq7lV2-zE",
         authDomain: "planning-jeudi.firebaseapp.com",
@@ -182,17 +196,28 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    // Une rotation classique simplifiée pour 5 jeudis maximum par mois
     const baseRotation = [
-        { plat: 1, dessert: 2, remp: 3 }, { plat: 4, dessert: 5, remp: 6 },
-        { plat: 7, dessert: 8, remp: 9 }, { plat: 10, dessert: 1, remp: 2 },
-        { plat: 3, dessert: 4, remp: 5 }, { plat: 6, dessert: 7, remp: 8 },
-        { plat: 9, dessert: 10, remp: 1 }, { plat: 2, dessert: 3, remp: 4 },
-        { plat: 5, dessert: 6, remp: 7 }, { plat: 8, dessert: 9, remp: 10 }
+        { plat: 1, dessert: 2, remp: 3 },
+        { plat: 4, dessert: 5, remp: 6 },
+        { plat: 7, dessert: 8, remp: 9 },
+        { plat: 10, dessert: 1, remp: 2 },
+        { plat: 3, dessert: 4, remp: 5 }
     ];
     const emojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦊", "🦄", "🦅"];
     
-    let participants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
-    let ratings = [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+    // Valeurs par défaut
+    let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
+    
+    let participants = [...defaultParticipants];
+    let ratings = [0, 0, 0, 0, 0];
+    let currentMonth = "2026-06"; // Juin par défaut
+    let unsubscribe = null;
+
+    const monthNames = {
+        "2026-06": "Juin", "2026-07": "Juillet", "2026-08": "Août",
+        "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
+    };
 
     window.switchPage = function(pageId) {
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
@@ -202,18 +227,36 @@
         if(pageId === 'stats') generateStats();
     }
 
-    // Connexion en temps réel à la base de données
-    onSnapshot(doc(db, "planning", "donnees_globales"), (docSnap) => {
-        if (docSnap.exists()) {
-            const data = docSnap.data();
-            participants = data.names || participants;
-            ratings = data.ratings || ratings;
-        } else {
-            setDoc(doc(db, "planning", "donnees_globales"), { names: participants, ratings: ratings });
-        }
-        initInputs();
-        generatePlanningCards();
+    // Écouter le changement de mois sur l'écran
+    document.getElementById('monthSelect').addEventListener('change', (e) => {
+        currentMonth = e.target.value;
+        document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
+        document.getElementById('statsTitle').innerText = `🏆 Classement de ${monthNames[currentMonth]}`;
+        connectToMonth(currentMonth);
     });
+
+    // Fonction de connexion dynamique au mois sélectionné dans Firebase
+    function connectToMonth(monthId) {
+        if (unsubscribe) unsubscribe(); // On coupe l'ancienne écoute
+
+        unsubscribe = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                participants = data.names || [...defaultParticipants];
+                ratings = data.ratings || [0, 0, 0, 0, 0];
+            } else {
+                // Si le mois n'existe pas encore dans Firebase, on le crée propre !
+                participants = [...defaultParticipants];
+                ratings = [0, 0, 0, 0, 0];
+                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, ratings: ratings });
+            }
+            initInputs();
+            generatePlanningCards();
+            if (document.getElementById('page-stats').classList.contains('active')) {
+                generateStats();
+            }
+        });
+    }
 
     function initInputs() {
         const container = document.getElementById('inputsContainer');
@@ -230,14 +273,14 @@
             document.getElementById(`input-chef-${index}`).addEventListener('blur', (e) => {
                 const idx = e.target.dataset.index;
                 participants[idx] = e.target.value || `Collaborateur ${parseInt(idx) + 1}`;
-                updateDoc(doc(db, "planning", "donnees_globales"), { names: participants });
+                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants });
             });
         });
     }
 
     window.rateWeekCloud = function(weekIndex, starRating) {
         ratings[weekIndex] = starRating;
-        updateDoc(doc(db, "planning", "donnees_globales"), { ratings: ratings });
+        updateDoc(doc(db, "planning", `mois_${currentMonth}`), { ratings: ratings });
     }
 
     function generatePlanningCards() {
@@ -259,11 +302,11 @@
             }
 
             card.innerHTML = `
-                <div class="card-header"><span>Semaine ${i + 1}</span><span style="font-size:0.75rem; opacity:0.6;">JEUDI</span></div>
+                <div class="card-header"><span>Jeudi Semaine ${i + 1}</span><span style="font-size:0.75rem; opacity:0.6;">${monthNames[currentMonth].toUpperCase()}</span></div>
                 <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
                 <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
                 <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
-                <div class="rating-box"><span class="role-label">Évaluer</span><div class="stars">${starsHTML}</div></div>
+                <div class="rating-box"><span class="role-label">Évaluer le repas</span><div class="stars">${starsHTML}</div></div>
             `;
             cardsContainer.appendChild(card);
         });
@@ -300,12 +343,15 @@
             tr.innerHTML = `
                 <td><span class="badge-rank ${rankClass}">${rankText}</span></td>
                 <td style="font-weight:700;">${p.name}</td>
-                <td style="color:${p.moyenne !== 'N/A' ? '#eab308' : '#94a3b8'}; font-weight:800;">${p.moyenne !== 'N/A' ? p.moyenne + ' ★' : 'Aucune note'}</td>
-                <td>${p.repasComptes} fois chef</td>
+                <td style="color:${p.moyenne !== 'N/A' ? '#eab308' : '#94a3b8'}; font-weight:800;">${p.moyenne !== 'N/A' ? p.moyenne + ' ★' : 'Aucun repas noté'}</td>
+                <td>${p.repasComptes} fois chef ce mois</td>
             `;
             tbody.appendChild(tr);
         });
     }
+
+    // Premier lancement sur Juin
+    connectToMonth(currentMonth);
 </script>
 </body>
 </html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Communauté Live</title>
+    <title>Le Planning des Jeudis : Rotation Réelle</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -112,7 +112,7 @@
 
         .badge-rank { display: inline-flex; align-items: center; justify-content: center; width: 32px; height: 32px; border-radius: 50%; font-weight: 800; background: #f1f5f9; }
         .rank-1 { background: #fef08a; color: #854d0e; }
-        .rank-2 { background: #e2e8f0; color: #475569; }
+        .rank-2 { background: #e2e2e2; color: #475569; }
         .rank-3 { background: #ffedd5; color: #9a3412; }
 
         @media (max-width: 768px) {
@@ -206,22 +206,17 @@
     const db = getFirestore(app);
 
     const emojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦊", "🦄", "🦅"];
-    let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Ewen"];
+    let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
     
     let participants = [...defaultParticipants];
     
-    // Structure de données évoluée : un tableau d'objets pour chaque jeudi du mois
-    // Chaque jeudi possède une liste de votes { Prénom: Note } et de présences [Prénoms...]
     let thursdaysData = [
-        { ratings: {}, presence: [] },
-        { ratings: {}, presence: [] },
-        { ratings: {}, presence: [] },
-        { ratings: {}, presence: [] },
-        { ratings: {}, presence: [] }
+        { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
+        { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
     ];
 
     let currentMonth = "2026-06";
-    let currentUser = "Lucas"; // Utilisateur connecté par défaut
+    let currentUser = "Lucas";
     let unsubscribe = null;
 
     const monthNames = {
@@ -239,7 +234,7 @@
                 if (date.getMonth() === monthIndex) {
                     thursdaysInRequestedMonth.push({
                         dateText: `Jeudi ${date.getDate()} ${monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`]}`,
-                        globalIndex: thursdaysCount
+                        globalIndex: thursdaysCount // Index absolu depuis le début de l'année
                     });
                 }
                 thursdaysCount++;
@@ -249,11 +244,35 @@
         return thursdaysInRequestedMonth;
     }
 
-    function getRolesForGlobalIndex(globalIndex, totalMembers) {
-        const plat = (globalIndex * 3) % totalMembers;
-        const dessert = (globalIndex * 3 + 1) % totalMembers;
-        const remp = (globalIndex * 3 + 2) % totalMembers;
-        return { plat, dessert, remp };
+    // ALGORITHME DE ROTATION UNIQUE AVEC LES DONNÉES HISTORIQUES FIXÉES
+    function getRolesForGlobalIndex(globalIndex) {
+        // Le 4 juin 2026 correspond au 22ème jeudi de l'année (index 22).
+        // Le 11 juin 2026 correspond au 23ème jeudi de l'année (index 23).
+        
+        // Ordre logique basé sur ta liste de participants pour qu'ils ne se répètent pas à la suite
+        // On place Jeanne(5), Laura(1), Claribel(2), Yoann(3) stratégiquement au début pour matcher tes dates.
+        const order = [
+            "Jeanne", "Laura", "Claribel", "Yoann", "Lucas", 
+            "Mireille", "Candices", "Killian", "Annaig", "Invité(e)"
+        ];
+
+        // Pour coller parfaitement aux dates :
+        // Le 4 Juin (index 22) : Jeanne au Plat, Laura au Dessert, Claribel en Remplaçant
+        // Le 11 Juin (index 23) : Claribel au Plat, Yoann au Dessert, Lucas en Remplaçant
+        // Le 18 Juin (index 24) : Lucas au Plat, Mireille au Dessert, etc.
+        
+        const baseIndex = globalIndex - 22; // On décale par rapport au 4 juin
+        
+        // Formule fluide qui pioche dans l'ordre de défilement sans doublons immédiats
+        const platIdx = ((baseIndex * 2) % order.length + order.length) % order.length;
+        const dessertIdx = (((baseIndex * 2) + 1) % order.length + order.length) % order.length;
+        const rempIdx = (((baseIndex * 2) + 2) % order.length + order.length) % order.length;
+
+        return {
+            plat: order[platIdx],
+            dessert: order[dessertIdx],
+            remp: order[rempIdx]
+        };
     }
 
     window.switchPage = function(pageId) {
@@ -284,20 +303,14 @@
                 const data = docSnap.data();
                 participants = data.names || [...defaultParticipants];
                 thursdaysData = data.thursdaysData || [
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] }
+                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
                 ];
             } else {
                 participants = [...defaultParticipants];
                 thursdaysData = [
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] }
+                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
+                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
                 ];
                 setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, thursdaysData: thursdaysData });
             }
@@ -343,7 +356,6 @@
                 
                 participants[idx] = newName;
                 
-                // Mettre à jour le nom dans la liste des présences et des notes si nécessaire
                 thursdaysData.forEach(t => {
                     if (t.ratings[oldName]) { t.ratings[newName] = t.ratings[oldName]; delete t.ratings[oldName]; }
                     const pIdx = t.presence.indexOf(oldName);
@@ -357,22 +369,19 @@
 
     window.rateWeekCloud = function(weekIndex, starRating) {
         if(!thursdaysData[weekIndex].ratings) thursdaysData[weekIndex].ratings = {};
-        
-        // Enregistre le vote de l'utilisateur actuel
         thursdaysData[weekIndex].ratings[currentUser] = starRating;
         updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
     }
 
     window.togglePresence = function(weekIndex) {
         if(!thursdaysData[weekIndex].presence) thursdaysData[weekIndex].presence = [];
-        
         const presenceList = thursdaysData[weekIndex].presence;
         const pIdx = presenceList.indexOf(currentUser);
         
         if (pIdx > -1) {
-            presenceList.splice(pIdx, 1); // Se désister
+            presenceList.splice(pIdx, 1);
         } else {
-            presenceList.push(currentUser); // S'inscrire
+            presenceList.push(currentUser);
         }
         updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
     }
@@ -390,17 +399,13 @@
             const card = document.createElement('div');
             card.className = `semaine-card sem-${i + 1}`;
             
-            const rotationIndex = getRolesForGlobalIndex(jeudiInfo.globalIndex, participants.length);
-            const platName = participants[rotationIndex.plat] || '';
-            const dessertName = participants[rotationIndex.dessert] || '';
-            const rempName = participants[rotationIndex.remp] || '';
+            // On récupère les rôles calculés proprement selon l'historique demandé
+            const roles = getRolesForGlobalIndex(jeudiInfo.globalIndex);
 
-            // Sécurité structures de données
             if(!thursdaysData[i]) thursdaysData[i] = { ratings: {}, presence: [] };
             if(!thursdaysData[i].ratings) thursdaysData[i].ratings = {};
             if(!thursdaysData[i].presence) thursdaysData[i].presence = [];
 
-            // Calcul de la moyenne des notes pour ce jeudi
             const currentRatings = thursdaysData[i].ratings;
             const voters = Object.keys(currentRatings);
             let avgText = "Pas de note";
@@ -409,7 +414,6 @@
                 avgText = `⭐ ${(total / voters.length).toFixed(1)} (${voters.length} v.)`;
             }
 
-            // Note de l'utilisateur connecté
             const userRating = currentRatings[currentUser] || 0;
 
             let starsHTML = '';
@@ -417,7 +421,6 @@
                 starsHTML += `<span class="star ${s <= userRating ? 'active' : ''}" onclick="rateWeekCloud(${i}, ${s})">★</span>`;
             }
 
-            // Présences
             const currentPresence = thursdaysData[i].presence;
             const isPresent = currentPresence.includes(currentUser);
             const presenceListText = currentPresence.length > 0 ? currentPresence.join(', ') : "Personne pour le moment";
@@ -427,9 +430,9 @@
                     <span>${jeudiInfo.dateText}</span>
                     <span class="avg-rating">${avgText}</span>
                 </div>
-                <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
-                <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
-                <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
+                <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${roles.plat}</span></div>
+                <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${roles.dessert}</span></div>
+                <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${roles.remp}</span></div>
                 
                 <div class="presence-zone">
                     <div class="presence-header">
@@ -470,10 +473,10 @@
                 let totalJeudi = voters.reduce((sum, voter) => sum + currentRatings[voter], 0);
                 let moyenneJeudi = totalJeudi / voters.length;
 
-                const rotationIndex = getRolesForGlobalIndex(jeudiInfo.globalIndex, participants.length);
-                const chefIdx = rotationIndex.plat;
+                const roles = getRolesForGlobalIndex(jeudiInfo.globalIndex);
                 
-                if(playerStats[chefIdx]) {
+                let chefIdx = participants.indexOf(roles.plat);
+                if(chefIdx > -1 && playerStats[chefIdx]) {
                     playerStats[chefIdx].totalMoyennes += moyenneJeudi;
                     playerStats[chefIdx].repasComptes += 1;
                 }

@@ -116,7 +116,6 @@
 
         .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
         
-        /* Correction radicale de l'alignement Émoji / Prénom */
         .input-group { 
             display: flex; 
             align-items: center; 
@@ -127,7 +126,6 @@
             box-shadow: var(--card-shadow);
         }
 
-        /* Conteneur pour superposer l'émoji et le vrai select invisible */
         .emoji-select-wrapper {
             position: relative;
             display: inline-flex;
@@ -140,7 +138,6 @@
             flex-shrink: 0;
         }
 
-        /* Le select devient complètement invisible mais reste cliquable au-dessus de l'émoji */
         .edit-emoji-select { 
             position: absolute;
             top: 0; left: 0; width: 100%; height: 100%;
@@ -157,7 +154,7 @@
             font-size: 0.95rem; 
             font-weight: 700; 
             outline: none; 
-            padding: 0 0 0 6px; /* Petit espace contrôlé à gauche du texte */
+            padding: 0 0 0 6px;
             color: var(--text-main);
         }
 
@@ -181,7 +178,7 @@
         .presence-btn.active { background: #22c55e; color: white; }
         .presence-list { opacity: 0.85; font-size: 0.75rem; margin-top: 6px; line-height: 1.3; }
 
-        /* Notation Étoiles Format Doigt Mobile */
+        /* Notation Étoiles */
         .rating-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 12px; gap: 10px; }
         .rating-row { display: flex; align-items: center; justify-content: space-between; }
         .stars { display: flex; gap: 8px; }
@@ -199,7 +196,7 @@
         .rank-2 { background: #e2e2e2; color: #475569; }
         .rank-3 { background: #ffedd5; color: #9a3412; }
 
-        /* Responsive Mobile Global */
+        /* Responsive Mobile */
         @media (max-width: 768px) {
             body { flex-direction: column; background-color: #f1f5f9; }
             .sidebar { display: none; }
@@ -241,6 +238,7 @@
 </head>
 <body>
 
+    <!-- ÉCRAN D'ACCUEIL / PROFIL -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-card">
             <h2>✨ Jeudi Cuistot</h2>
@@ -268,8 +266,9 @@
         </div>
     </div>
 
+    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
-        <div class="logo-area">✨ <span> Parametre </span></div>
+        <div class="logo-area">✨ <span>Parametre</span></div>
         <div class="current-user-box">
             <div class="current-user-info">
                 <span id="sidebarUserEmoji">🦊</span>
@@ -281,15 +280,17 @@
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
     </div>
 
+    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout" onclick="triggerLogout()"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
+    <!-- ZONE PRINCIPALE -->
     <div class="main-content">
         <div class="header-status">
-            <h1>✨Planning du Mois✨</h1>
+            <h1> ✨Planning du mois✨ </h1>
             <div class="selector-wrapper">
                 <select id="monthSelect">
                     <option value="2026-06">Juin</option>
@@ -303,6 +304,7 @@
             </div>
         </div>
 
+        <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
             <div class="accordion-header" onclick="toggleTeamAccordion()">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
@@ -316,6 +318,7 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
+        <!-- ONGLET 2 : STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.2rem; margin-bottom:4px;">🏆 Classement</h2>
@@ -347,7 +350,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Émojis rangés par Thèmes
     const emojiThemes = {
         "🦁 Animaux": ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🐙", "🦑", "🦐", "🦩", "🦖", "🦕", "🐢", "🐝", "🦋", "🦉", "🐧", "🦔"],
         "🧑‍🍳 Chefs & Moods": ["🧑‍🍳", "👨‍🍳", "👩‍🍳", "😎", "🥳", "🤠", "🤖", "👽", "👑", "👻", "🤡", "🎩"],
@@ -360,17 +362,16 @@
     Object.values(emojiThemes).forEach(list => { allAvailableEmojis = allAvailableEmojis.concat(list); });
     
     let selectedEmoji = "🦊";
-
     let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candice", "Killian", "Annaig", "Ewen", "Anthony", "Clement", "Clémentine", "Benoit"];
     let participants = [...defaultParticipants];
     let customEmojisMapping = {}; 
     
     let thursdaysData = [];
     let overrides = {}; 
-
     let currentMonth = "2026-06";
     let currentUser = "";
     let unsubscribeMonth = null;
+    let isEditingTeam = false; // Sécurité anti-rechargement pendant l'édition
 
     const monthNames = {
         "2026-06": "Juin", "2026-07": "Juillet", "2026-08": "Août",
@@ -383,7 +384,6 @@
     Object.keys(emojiThemes).forEach(themeName => {
         const section = document.createElement('div');
         section.className = 'theme-section';
-        
         const title = document.createElement('div');
         title.className = 'theme-title';
         title.innerText = themeName;
@@ -397,7 +397,6 @@
             btn.className = `emoji-btn ${isFirstEmoji ? 'selected' : ''}`;
             btn.innerText = emoji;
             btn.type = "button";
-            
             if(isFirstEmoji) { selectedEmoji = emoji; isFirstEmoji = false; }
 
             btn.addEventListener('click', () => {
@@ -407,7 +406,6 @@
             });
             grid.appendChild(btn);
         });
-        
         section.appendChild(grid);
         themesContainer.appendChild(section);
     });
@@ -558,14 +556,16 @@
             const teamData = teamSnap.data();
             participants = teamData.names || [...defaultParticipants];
             customEmojisMapping = teamData.customEmojisMapping || {};
-        } else {
-            participants = [...defaultParticipants];
-            customEmojisMapping = {};
-            setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: {} });
         }
+        
         fillExistingProfilesDropdown();
         checkUserSession();
-        initInputs();
+        
+        // SÉCURITÉ : On n'écrase pas l'affichage de l'équipe si l'utilisateur est en train d'écrire
+        if (!isEditingTeam) {
+            initInputs();
+        }
+        
         if(currentUser) {
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) generateStats();
@@ -579,9 +579,6 @@
                 const data = docSnap.data();
                 thursdaysData = data.thursdaysData || [];
                 overrides = data.overrides || {};
-            } else {
-                thursdaysData = []; overrides = {};
-                setDoc(doc(db, "planning", `mois_${monthId}`), { thursdaysData: [], overrides: {} });
             }
             if(currentUser) {
                 generatePlanningCards();
@@ -599,7 +596,6 @@
             div.className = 'input-group';
             let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
             
-            // On sépare visuellement le texte de l'émoji, et le menu déroulant englobe juste l'émoji de façon invisible
             div.innerHTML = `
                 <div class="emoji-select-wrapper">
                     <span id="visual-emoji-${index}">${currentEmoji}</span>
@@ -609,7 +605,10 @@
             `;
             container.appendChild(div);
             
-            document.getElementById(`emoji-select-${index}`).addEventListener('change', (e) => {
+            const selectEl = document.getElementById(`emoji-select-${index}`);
+            const inputEl = document.getElementById(`input-chef-${index}`);
+
+            selectEl.addEventListener('change', (e) => {
                 const selected = e.target.value;
                 const idx = e.target.dataset.index;
                 customEmojisMapping[participants[idx]] = selected;
@@ -618,14 +617,34 @@
                 setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
             });
 
-            document.getElementById(`input-chef-${index}`).addEventListener('blur', (e) => {
-                const idx = e.target.dataset.index; const oldName = participants[idx]; const newName = e.target.value.trim();
+            // Quand on clique dans le champ, on bloque le rechargement Firebase intempestif
+            inputEl.addEventListener('focus', () => {
+                isEditingTeam = true;
+            });
+
+            inputEl.addEventListener('blur', (e) => {
+                const idx = e.target.dataset.index; 
+                const oldName = participants[idx]; 
+                const newName = e.target.value.trim();
+                
+                isEditingTeam = false; // L'édition est finie
+
                 if(oldName === newName || !newName) return;
-                if(participants.some((p, pIdx) => p.toLowerCase() === newName.toLowerCase() && pIdx != idx)) { e.target.value = oldName; return alert("Nom existant."); }
+                if(participants.some((p, pIdx) => p.toLowerCase() === newName.toLowerCase() && pIdx != idx)) { 
+                    e.target.value = oldName; 
+                    return alert("Nom existant."); 
+                }
 
                 participants[idx] = newName;
-                if(customEmojisMapping[oldName]) { customEmojisMapping[newName] = customEmojisMapping[oldName]; delete customEmojisMapping[oldName]; }
-                if(currentUser === oldName) { currentUser = newName; localStorage.setItem('jeudiCuistot_user', currentUser); updateSidebarUserInfo(); }
+                if(customEmojisMapping[oldName]) { 
+                    customEmojisMapping[newName] = customEmojisMapping[oldName]; 
+                    delete customEmojisMapping[oldName]; 
+                }
+                if(currentUser === oldName) { 
+                    currentUser = newName; 
+                    localStorage.setItem('jeudiCuistot_user', currentUser); 
+                    updateSidebarUserInfo(); 
+                }
 
                 setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
             });

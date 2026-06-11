@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Édition Premium Mobile Fix</title>
+    <title>Le Planning des Jeudis : Édition Finale</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -13,9 +13,8 @@
             --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.04);
             --text-main: #0f172a;
             --text-muted: #64748b;
-            --primary-gradient: linear-gradient(135deg, #0ea5e9, #2563eb);
             
-            /* Gradients haut de gamme pour les cartes */
+            /* Gradients pour les cartes */
             --grad-1: linear-gradient(135deg, #0f172a, #1e293b);
             --grad-2: linear-gradient(135deg, #0284c7, #0369a1);
             --grad-3: linear-gradient(135deg, #b45309, #78350f);
@@ -43,7 +42,7 @@
             flex-direction: row;
         }
 
-        /* SIDEBAR PC */
+        /* SIDEBAR (PC) */
         .sidebar {
             width: 280px;
             background-color: var(--sidebar-bg);
@@ -92,7 +91,7 @@
             color: white;
         }
 
-        /* INTERFACE PRINCIPALE */
+        /* ZONE CONTENU */
         .main-content {
             flex: 1;
             padding: 40px 50px;
@@ -128,21 +127,19 @@
             font-size: 0.85rem;
             font-weight: 700;
             border: 1px solid #dcfce7;
-            box-shadow: 0 4px 12px rgba(22, 101, 52, 0.05);
             white-space: nowrap;
         }
 
         .page-section { display: none; }
         .page-section.active { display: block; }
 
-        /* PANNEAU DE CONFIGURATION */
+        /* ÉQUIPE PANNEAU */
         .section-panel {
             background: white;
             border-radius: 20px;
             padding: 25px;
             box-shadow: var(--card-shadow);
             margin-bottom: 35px;
-            border: 1px solid rgba(0,0,0,0.02);
         }
 
         .panel-title {
@@ -150,7 +147,6 @@
             margin-bottom: 20px;
             font-size: 1.15rem;
             font-weight: 700;
-            color: #1e293b;
         }
 
         .inputs-grid {
@@ -166,13 +162,6 @@
             border: 1px solid #e2e8f0;
             border-radius: 12px;
             padding: 10px 14px;
-            transition: all 0.2s ease;
-        }
-
-        .input-group:focus-within {
-            border-color: #38bdf8;
-            background: white;
-            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.15);
         }
 
         .input-group input {
@@ -185,7 +174,7 @@
         }
         .input-group input:focus { outline: none; }
 
-        /* GRILLE DE CARTES */
+        /* CARTES */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -196,38 +185,25 @@
             border-radius: 24px;
             color: white;
             padding: 24px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.04);
             display: flex;
             flex-direction: column;
             gap: 16px;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        }
-
-        .semaine-card:hover {
-            transform: translateY(-4px);
-            box-shadow: 0 20px 35px rgba(0,0,0,0.1);
+            transition: all 0.2s ease;
         }
 
         .card-header {
             font-size: 1.15rem;
             font-weight: 800;
-            letter-spacing: -0.5px;
-            opacity: 0.95;
             display: flex;
             justify-content: space-between;
-            align-items: center;
         }
 
         .role-box {
             display: flex;
             flex-direction: column;
-            background: rgba(255, 255, 255, 0.07);
+            background: rgba(255, 255, 255, 0.08);
             padding: 12px 16px;
             border-radius: 14px;
-            backdrop-filter: blur(5px);
-            border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
         .role-label {
@@ -236,39 +212,16 @@
             text-transform: uppercase;
             opacity: 0.7;
             margin-bottom: 4px;
-            letter-spacing: 0.5px;
         }
 
-        .role-name {
-            font-size: 1.05rem;
-            font-weight: 700;
-        }
+        .role-name { font-size: 1.05rem; font-weight: 700; }
 
-        /* NOTATION ÉTOILES */
-        .rating-box {
-            margin-top: 4px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        
-        .stars {
-            display: flex;
-            gap: 8px;
-            font-size: 1.4rem;
-            cursor: pointer;
-        }
+        .rating-box { display: flex; flex-direction: column; gap: 6px; }
+        .stars { display: flex; gap: 8px; font-size: 1.4rem; cursor: pointer; }
+        .star { color: rgba(255, 255, 255, 0.25); }
+        .star.active { color: #facc15; }
 
-        .star {
-            color: rgba(255, 255, 255, 0.25);
-            transition: all 0.2s ease;
-        }
-        .star:hover, .star.active {
-            color: #facc15;
-            transform: scale(1.15);
-        }
-
-        /* TABLEAU DE STATS */
+        /* TABLEAU CLASSEMENT */
         .stats-container {
             background: white;
             border-radius: 24px;
@@ -277,27 +230,9 @@
             overflow-x: auto;
         }
 
-        .stats-table {
-            width: 100%;
-            border-collapse: collapse;
-            text-align: left;
-            min-width: 500px;
-        }
-
-        .stats-table th {
-            padding: 16px 20px;
-            color: var(--text-muted);
-            font-weight: 700;
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            border-bottom: 2px solid #f1f5f9;
-        }
-
-        .stats-table td {
-            padding: 18px 20px;
-            font-size: 0.95rem;
-            border-bottom: 1px solid #f1f5f9;
-        }
+        .stats-table { width: 100%; border-collapse: collapse; }
+        .stats-table th { padding: 16px; color: var(--text-muted); font-size: 0.85rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; text-align: left; }
+        .stats-table td { padding: 16px; border-bottom: 1px solid #f1f5f9; }
 
         .badge-rank {
             display: inline-flex;
@@ -307,29 +242,20 @@
             height: 32px;
             border-radius: 50%;
             font-weight: 800;
-            font-size: 0.9rem;
             background: #f1f5f9;
-            color: #475569;
         }
-
         .rank-1 { background: #fef08a; color: #854d0e; }
         .rank-2 { background: #e2e8f0; color: #475569; }
         .rank-3 { background: #ffedd5; color: #9a3412; }
 
-        /* DESIGN ADAPTATIF MOBILE (CORRIGÉ) */
+        /* MODE RESPONSIVE MOBILE */
         @media (max-width: 768px) {
-            body {
-                flex-direction: column;
-            }
-
-            /* On transforme la sidebar PC en barre fixe en bas */
+            body { flex-direction: column; }
+            
             .sidebar {
                 position: fixed;
-                bottom: 0;
-                left: 0;
-                right: 0;
-                width: 100%;
-                height: 70px;
+                bottom: 0; left: 0; right: 0;
+                width: 100%; height: 70px;
                 flex-direction: row;
                 padding: 0 10px;
                 justify-content: space-around;
@@ -339,71 +265,27 @@
                 gap: 0;
             }
 
-            .logo-area {
-                display: none;
-            }
-
-            /* On cible uniquement le texte des boutons de la navigation pour mobile */
+            .logo-area { display: none; }
+            
             .nav-btn {
                 flex-direction: column;
                 gap: 4px;
                 padding: 8px;
                 font-size: 0.75rem;
-                border-radius: 8px;
                 text-align: center;
                 flex: 1;
                 justify-content: center;
             }
 
-            .nav-btn:nth-child(4) {
-                display: none;
-            }
+            .nav-btn:nth-child(4) { display: none; }
 
-            .main-content {
-                padding: 20px 16px 90px 16px;
-            }
-
-            h1 {
-                font-size: 1.6rem;
-            }
-
-            .header-status {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 10px;
-                margin-bottom: 25px;
-            }
-
-            .inputs-grid {
-                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-                gap: 10px;
-            }
-
-            .input-group {
-                padding: 8px 10px;
-            }
-
-            .input-group input {
-                font-size: 0.85rem;
-            }
-
-            .cards-grid {
-                grid-template-columns: 1fr;
-                gap: 16px;
-            }
-
-            .semaine-card {
-                padding: 20px;
-                border-radius: 20px;
-            }
-
-            .stats-container {
-                padding: 15px;
-                border-radius: 20px;
-            }
+            .main-content { padding: 20px 16px 90px 16px; }
+            h1 { font-size: 1.5rem; }
+            .header-status { flex-direction: column; align-items: flex-start; gap: 8px; }
+            .inputs-grid { grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); gap: 10px; }
+            .cards-grid { grid-template-columns: 1fr; }
         }
 
-        /* Couleurs thématiques */
         .sem-1 { background: var(--grad-1); } .sem-2 { background: var(--grad-2); }
         .sem-3 { background: var(--grad-3); } .sem-4 { background: var(--grad-4); }
         .sem-5 { background: var(--grad-5); } .sem-6 { background: var(--grad-6); }
@@ -422,12 +304,12 @@
     </div>
 
     <div class="main-content">
-        
         <div class="header-status">
             <h1>Workspace Culinary Hub</h1>
             <div class="status-badge">⚡ Sauvegardé en Cloud Local</div>
         </div>
 
+        <!-- APERÇU -->
         <div id="page-aperçu" class="page-section active">
             <div class="section-panel">
                 <div class="panel-title">👥 Équipe de cuisine (Modifiable en direct)</div>
@@ -438,11 +320,11 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
+        <!-- STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Le Classement des Chefs</h2>
                 <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne du plat principal.</p>
-                
                 <table class="stats-table">
                     <thead>
                         <tr>
@@ -456,7 +338,6 @@
                 </table>
             </div>
         </div>
-
     </div>
 
 <script>
@@ -483,16 +364,19 @@
         if(pageId === 'stats') generateStats();
     }
 
-    const inputsContainer = document.getElementById('inputsContainer');
-    participants.forEach((name, index) => {
-        const div = document.createElement('div');
-        div.className = 'input-group';
-        div.innerHTML = `
-            <span style="margin-right:8px; font-size:1rem;">${emojis[index % emojis.length]}</span>
-            <input type="text" value="${name}" data-index="${index}" oninput="updateName(this)">
-        `;
-        inputsContainer.appendChild(div);
-    });
+    function initInputs() {
+        const container = document.getElementById('inputsContainer');
+        container.innerHTML = '';
+        participants.forEach((name, index) => {
+            const div = document.createElement('div');
+            div.className = 'input-group';
+            div.innerHTML = `
+                <span style="margin-right:8px;">${emojis[index % emojis.length]}</span>
+                <input type="text" value="${name}" data-index="${index}" oninput="updateName(this)">
+            `;
+            container.appendChild(div);
+        });
+    }
 
     function updateName(input) {
         const index = input.dataset.index;
@@ -515,9 +399,9 @@
             const card = document.createElement('div');
             card.className = `semaine-card sem-${i + 1}`;
             
-            const platName = participants[semaine.plat - 1];
-            const dessertName = participants[semaine.dessert - 1];
-            const rempName = participants[semaine.remp - 1];
+            const platName = participants[semaine.plat - 1] || '';
+            const dessertName = participants[semaine.dessert - 1] || '';
+            const rempName = participants[semaine.remp - 1] || '';
             const currentRating = ratings[i];
 
             let starsHTML = '';
@@ -528,13 +412,13 @@
             card.innerHTML = `
                 <div class="card-header">
                     <span>Semaine ${i + 1}</span>
-                    <span style="font-size:0.75rem; opacity:0.6; font-weight:500;">JEUDI</span>
+                    <span style="font-size:0.75rem; opacity:0.6;">JEUDI</span>
                 </div>
                 <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
                 <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
                 <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
                 <div class="rating-box">
-                    <span class="role-label">Évaluer le repas</span>
+                    <span class="role-label">Évaluer</span>
                     <div class="stars">${starsHTML}</div>
                 </div>
             `;
@@ -551,10 +435,11 @@
         baseRotation.forEach((semaine, i) => {
             const note = ratings[i];
             if (note > 0) {
-                const chefIndex = Float32Array;
                 const chefIdx = semaine.plat - 1;
-                playerStats[chefIdx].totalStars += note;
-                playerStats[chefIdx].repasComptes += 1;
+                if(playerStats[chefIdx]) {
+                    playerStats[chefIdx].totalStars += note;
+                    playerStats[chefIdx].repasComptes += 1;
+                }
             }
         });
 
@@ -580,16 +465,17 @@
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td><span class="badge-rank ${rankClass}">${rankText}</span></td>
-                <td style="font-weight:700; color:#1e293b;">${p.name}</td>
-                <td style="color:${p.moyenne !== 'N/A' ? '#eab308' : '#94a3b8'}; font-weight:800; font-size:1rem;">
+                <td style="font-weight:700;">${p.name}</td>
+                <td style="color:${p.moyenne !== 'N/A' ? '#eab308' : '#94a3b8'}; font-weight:800;">
                     ${p.moyenne !== 'N/A' ? p.moyenne + ' ★' : 'Aucune note'}
                 </td>
-                <td style="color:var(--text-muted); font-weight:500;">${p.repasComptes} fois chef</td>
+                <td>${p.repasComptes} fois chef</td>
             `;
             tbody.appendChild(tr);
         });
     }
 
+    initInputs();
     generatePlanningCards();
 </script>
 

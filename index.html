@@ -157,9 +157,8 @@
         /* Responsive Mobile Global */
         @media (max-width: 768px) {
             body { flex-direction: column; background-color: #f1f5f9; }
-            .sidebar { display: none; } /* On cache la sidebar PC */
+            .sidebar { display: none; }
             
-            /* Nouvelle Barre Basse Mobile */
             .mobile-nav {
                 position: fixed; bottom: 0; left: 0; right: 0; height: 68px;
                 background: #0f172a; display: flex; justify-content: space-around; align-items: center;
@@ -225,7 +224,7 @@
         </div>
     </div>
 
-    <!-- SIDEBAR DESKTOP (Cachée sur mobile) -->
+    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Jeudi Cuistot</span></div>
         <div class="current-user-box">
@@ -239,7 +238,7 @@
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
     </div>
 
-    <!-- BARRE NAV BASSE MOBILE (Cachée sur PC) -->
+    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
@@ -265,7 +264,6 @@
 
         <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
-            <!-- Section Équipe repliable sur mobile -->
             <div class="accordion-header" onclick="toggleTeamAccordion()">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
                 <span id="accordionArrow">▼</span>
@@ -295,7 +293,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
@@ -313,23 +311,25 @@
     const availableEmojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🌶️", "🥑", "🧑‍🍳", "🍕", "🧁", "🍉", "🧋"];
     let selectedEmoji = availableEmojis[0];
 
+    // Données d'équipe globales (indépendantes du mois choisi)
     let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Ewen", "Anthony", "Clement"];
     let participants = [...defaultParticipants];
     let customEmojisMapping = {}; 
     
+    // Données spécifiques au mois
     let thursdaysData = [];
     let overrides = {}; 
 
     let currentMonth = "2026-06";
     let currentUser = "";
-    let unsubscribe = null;
+    let unsubscribeMonth = null;
 
     const monthNames = {
         "2026-06": "Juin", "2026-07": "Juillet", "2026-08": "Août",
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
 
-    // Init picker emojis
+    // Init picker émojis
     const pickerContainer = document.getElementById('emojiPickerContainer');
     availableEmojis.forEach((emoji, i) => {
         const btn = document.createElement('button');
@@ -453,7 +453,8 @@
         participants.push(inputName);
         customEmojisMapping[inputName] = selectedEmoji;
 
-        setDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true }).then(() => {
+        // Sauvegarde globale de l'équipe
+        setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true }).then(() => {
             currentUser = inputName;
             localStorage.setItem('jeudiCuistot_user', currentUser);
             document.getElementById('newProfileName').value = "";
@@ -485,24 +486,43 @@
         document.getElementById('teamCount').innerText = participants.length;
     }
 
-    function connectToMonth(monthId) {
-        if (unsubscribe) unsubscribe();
-        unsubscribe = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                participants = data.names || [...defaultParticipants];
-                thursdaysData = data.thursdaysData || [];
-                overrides = data.overrides || {};
-                customEmojisMapping = data.customEmojisMapping || {};
-            } else {
-                participants = [...defaultParticipants]; thursdaysData = []; overrides = {}; customEmojisMapping = {};
-                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, thursdaysData: [], overrides: {}, customEmojisMapping: {} });
-            }
-            fillExistingProfilesDropdown();
-            checkUserSession();
-            initInputs();
+    // ÉCOUTEUR GLOBAL 1 : Équipe unique
+    onSnapshot(doc(db, "planning", "global_team"), (teamSnap) => {
+        if (teamSnap.exists()) {
+            const teamData = teamSnap.data();
+            participants = teamData.names || [...defaultParticipants];
+            customEmojisMapping = teamData.customEmojisMapping || {};
+        } else {
+            // Création initiale si le document n'existe pas encore
+            participants = [...defaultParticipants];
+            customEmojisMapping = {};
+            setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: {} });
+        }
+        fillExistingProfilesDropdown();
+        checkUserSession();
+        initInputs();
+        if(currentUser) {
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+        }
+    });
+
+    // ÉCOUTEUR GLOBAL 2 : Changements de mois pour le planning
+    function connectToMonth(monthId) {
+        if (unsubscribeMonth) unsubscribeMonth();
+        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                thursdaysData = data.thursdaysData || [];
+                overrides = data.overrides || {};
+            } else {
+                thursdaysData = []; overrides = {};
+                setDoc(doc(db, "planning", `mois_${monthId}`), { thursdaysData: [], overrides: {} });
+            }
+            if(currentUser) {
+                generatePlanningCards();
+                if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+            }
         });
     }
 
@@ -524,7 +544,7 @@
             document.getElementById(`emoji-select-${index}`).addEventListener('change', (e) => {
                 customEmojisMapping[participants[e.target.dataset.index]] = e.target.value;
                 if(currentUser === participants[e.target.dataset.index]) updateSidebarUserInfo();
-                setDoc(doc(db, "planning", `mois_${currentMonth}`), { customEmojisMapping: customEmojisMapping }, { merge: true });
+                setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
             });
 
             document.getElementById(`input-chef-${index}`).addEventListener('blur', (e) => {
@@ -536,7 +556,7 @@
                 if(customEmojisMapping[oldName]) { customEmojisMapping[newName] = customEmojisMapping[oldName]; delete customEmojisMapping[oldName]; }
                 if(currentUser === oldName) { currentUser = newName; localStorage.setItem('jeudiCuistot_user', currentUser); updateSidebarUserInfo(); }
 
-                setDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
+                setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
             });
         });
     }

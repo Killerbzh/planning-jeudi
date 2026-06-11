@@ -115,9 +115,40 @@
         .accordion-content.open { display: block; }
 
         .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 10px; }
-        .input-group { display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 10px; padding: 8px 10px; }
-        .input-group input { border: none; background: transparent; width: 100%; font-size: 0.85rem; font-weight: 600; outline: none; }
-        .edit-emoji-select { border: none; background: transparent; font-size: 1rem; cursor: pointer; outline: none; margin-right: 2px; }
+        
+        /* Correction de l'alignement Émoji / Prénom */
+        .input-group { 
+            display: flex; 
+            align-items: center; 
+            background: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 10px; 
+            padding: 8px 12px;
+            gap: 6px;
+        }
+        .input-group input { 
+            border: none; 
+            background: transparent; 
+            width: 100%; 
+            font-size: 0.85rem; 
+            font-weight: 700; 
+            outline: none; 
+            padding: 0;
+            color: var(--text-main);
+        }
+        .edit-emoji-select { 
+            border: none; 
+            background: transparent; 
+            font-size: 1.1rem; 
+            cursor: pointer; 
+            outline: none; 
+            padding: 0;
+            margin: 0;
+            appearance: none; /* Supprime la flèche du menu déroulant */
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            width: auto;
+        }
 
         /* Grille des cartes de planning */
         .page-section { display: none; }
@@ -199,7 +230,6 @@
 </head>
 <body>
 
-    <!-- ÉCRAN D'ACCUEIL / PROFIL -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-card">
             <h2>✨ Jeudi Cuistot</h2>
@@ -220,7 +250,6 @@
 
             <div class="form-control">
                 <label>🎨 Ton Avatar (Par Thème) :</label>
-                <!-- Zone de défilement pour pas que l'écran soit trop géant -->
                 <div style="max-height: 220px; overflow-y: auto; padding-right: 4px; text-align: left;" id="emojiThemesContainer"></div>
             </div>
 
@@ -228,7 +257,6 @@
         </div>
     </div>
 
-    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Jeudi Cuistot</span></div>
         <div class="current-user-box">
@@ -242,14 +270,12 @@
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
     </div>
 
-    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout" onclick="triggerLogout()"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
-    <!-- ZONE PRINCIPALE -->
     <div class="main-content">
         <div class="header-status">
             <h1>Jeudi Cuistot</h1>
@@ -266,7 +292,6 @@
             </div>
         </div>
 
-        <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
             <div class="accordion-header" onclick="toggleTeamAccordion()">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
@@ -280,7 +305,6 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
-        <!-- ONGLET 2 : STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.2rem; margin-bottom:4px;">🏆 Classement</h2>
@@ -297,7 +321,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
@@ -317,22 +341,19 @@
         "🦁 Animaux": ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🐙", "🦑", "🦐", "🦩", "🦖", "🦕", "🐢", "🐝", "🦋", "🦉", "🐧", "🦔"],
         "🧑‍🍳 Chefs & Moods": ["🧑‍🍳", "👨‍🍳", "👩‍🍳", "😎", "🥳", "🤠", "🤖", "👽", "👑", "👻", "🤡", "🎩"],
         "🍕 Plats Salés": ["🍕", "🍔", "🍟", "🌭", "🌮", "🌯", "🥗", "🥘", "🍝", "🍜", "🍲", "🍣", "🥟", "🍳", "🥩", "🧀", "🌶️", "🥑"],
-        "🧁 Douceurs & Sucrés": ["🧁", "🍉", "🥞", " waffle ", "🧇", "🍩", "🍪", "🎂", "🍰", "🍫", "🍬", "🍭", "🍮", "🍦", "🍓", "🍒", "🍇"],
+        "🧁 Douceurs & Sucrés": ["🧁", "🍉", "🥞", "🧇", "🍩", "🍪", "🎂", "🍰", "🍫", "🍬", "🍭", "🍮", "🍦", "🍓", "🍒", "🍇"],
         "🧋 Boissons": ["🧋", "🥤", "🧃", "☕", "🍻", "🥂", "🍷", "🍹"]
     };
 
-    // Liste plate combinée pour la recherche et l'édition
     let allAvailableEmojis = [];
     Object.values(emojiThemes).forEach(list => { allAvailableEmojis = allAvailableEmojis.concat(list); });
     
     let selectedEmoji = "🦊";
 
-    // Données d'équipe globales (indépendantes du mois choisi)
-    let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Ewen", "Anthony", "Clement"];
+    let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candice", "Killian", "Annaig", "Ewen", "Anthony", "Clement", "Clémentine", "Benoit"];
     let participants = [...defaultParticipants];
     let customEmojisMapping = {}; 
     
-    // Données spécifiques au mois
     let thursdaysData = [];
     let overrides = {}; 
 
@@ -345,7 +366,6 @@
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
 
-    // Construction dynamique de l'interface des émojis par thèmes
     const themesContainer = document.getElementById('emojiThemesContainer');
     let isFirstEmoji = true;
 
@@ -417,7 +437,7 @@
                 remp: overrides[globalIndex].remp || "Aucun"
             };
         }
-        const baseOrder = ["Jeanne", "Laura", "Claribel", "Yoann", "Lucas", "Mireille", "Candices", "Killian", "Annaig", "Ewen", "Anthony", "Clement"];
+        const baseOrder = ["Jeanne", "Laura", "Claribel", "Yoann", "Lucas", "Mireille", "Candice", "Killian", "Annaig", "Ewen", "Anthony", "Clement", "Clémentine", "Benoit"];
         const order = baseOrder.filter(n => participants.includes(n));
         participants.forEach(p => { if (!order.includes(p)) order.push(p); });
 

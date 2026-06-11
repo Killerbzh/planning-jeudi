@@ -284,14 +284,15 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
+    // Configuration mise à jour pour le projet planning-jeudi
     const firebaseConfig = {
-        apiKey: "AIzaSyCjxDs1KpC31RxhqttQ4RTK29ODM8glQHE",
-        authDomain: "base-de-test-4c1a5.firebaseapp.com",
-        projectId: "base-de-test-4c1a5",
-        storageBucket: "base-de-test-4c1a5.firebasestorage.app",
-        messagingSenderId: "275650264990",
-        appId: "1:275650264990:web:6cdc061a42b6d94de5208f",
-        measurementId: "G-PS2F7EKGPV"
+        apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
+        authDomain: "planning-jeudi.firebaseapp.com",
+        projectId: "planning-jeudi",
+        storageBucket: "planning-jeudi.firebasestorage.app",
+        messagingSenderId: "894632315552",
+        appId: "1:894632315552:web:aed8853528dec823d617c5",
+        measurementId: "G-YR52XHS5C0"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -430,7 +431,6 @@
         }
     });
 
-    // CRÉATION DE PROFIL AVEC SETDOC POUR ÉVITER LES ERREURS SI LE DOCUMENT N'EXISTE PAS
     document.getElementById('createProfileBtn').addEventListener('click', () => {
         const inputName = document.getElementById('newProfileName').value.trim();
         if (inputName === "") {
@@ -447,7 +447,6 @@
         participants.push(inputName);
         customEmojisMapping[inputName] = selectedEmoji;
 
-        // Utilisation de setDoc avec merge: true pour être sûr que ça sauvegarde et crée le document si besoin
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { 
             names: participants,
             customEmojisMapping: customEmojisMapping
@@ -460,7 +459,7 @@
             generatePlanningCards();
         }).catch((err) => {
             console.error("Erreur d'écriture Firebase:", err);
-            alert("Erreur lors de la sauvegarde sur Firebase. Vérifie tes règles d'accès.");
+            alert("Erreur lors de la sauvegarde sur Firebase. Vérifie que tes Règles d'accès (Rules) sont bien configurées.");
         });
     });
 

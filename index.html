@@ -90,6 +90,7 @@
             display: flex; align-items: center; gap: 14px; padding: 14px 18px;
             border-radius: 12px; background: transparent; border: none;
             color: var(--sidebar-text); font-weight: 600; font-size: 0.95rem; cursor: pointer;
+            width: 100%; text-align: left;
         }
         .nav-btn.active { background-color: rgba(56, 189, 248, 0.1); color: var(--sidebar-active); }
 
@@ -169,7 +170,7 @@
         
         .role-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.1); padding: 10px 12px; border-radius: 12px; }
         .role-label { font-size: 0.7rem; font-weight: 700; text-transform: uppercase; opacity: 0.75; margin-bottom: 2px; }
-        .role-select-custom { background: transparent; border: none; color: white; font-size: 0.95rem; font-weight: 700; outline: none; width: 100%; padding: 2px 0; }
+        .role-select-custom { background: transparent; border: none; color: white; font-size: 0.95rem; font-weight: 700; outline: none; width: 100%; padding: 2px 0; cursor: pointer; }
         .role-select-custom option { color: var(--text-main); }
 
         .presence-zone { background: rgba(0, 0, 0, 0.15); border-radius: 12px; padding: 12px; }
@@ -181,8 +182,8 @@
         /* Notation Étoiles */
         .rating-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.08); padding: 12px; border-radius: 12px; gap: 10px; }
         .rating-row { display: flex; align-items: center; justify-content: space-between; }
-        .stars { display: flex; gap: 8px; }
-        .star { font-size: 1.6rem; color: rgba(255, 255, 255, 0.25); cursor: pointer; padding: 2px; transition: color 0.2s; }
+        .stars { display: flex; gap: 4px; }
+        .star { font-size: 1.5rem; color: rgba(255, 255, 255, 0.25); cursor: pointer; padding: 2px; transition: color 0.2s; }
         .star.active { color: #facc15; }
         .avg-rating { font-size: 0.75rem; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 8px; text-align: right; line-height: 1.3; }
 
@@ -238,7 +239,6 @@
 </head>
 <body>
 
-    <!-- ÉCRAN D'ACCUEIL / PROFIL -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-card">
             <h2>✨ Jeudi Cuistot</h2>
@@ -266,7 +266,6 @@
         </div>
     </div>
 
-    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Paramètres</span></div>
         <div class="current-user-box">
@@ -280,14 +279,12 @@
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
     </div>
 
-    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout" onclick="triggerLogout()"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
-    <!-- ZONE PRINCIPALE -->
     <div class="main-content">
         <div class="header-status">
             <h1> ✨Planning du mois✨ </h1>
@@ -304,7 +301,6 @@
             </div>
         </div>
 
-        <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
             <div class="accordion-header" onclick="toggleTeamAccordion()">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
@@ -318,7 +314,6 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
-        <!-- ONGLET 2 : STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.2rem; margin-bottom:4px;">🏆 Classement</h2>
@@ -378,6 +373,7 @@
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
 
+    // Génération visuelle du sélecteur d'émojis
     const themesContainer = document.getElementById('emojiThemesContainer');
     let isFirstEmoji = true;
 
@@ -458,7 +454,7 @@
         let rempIdx = (globalIndex + 1) % len;
         if (rempIdx === platIdx || rempIdx === dessertIdx) rempIdx = (rempIdx + 1) % len;
 
-        return { order, plat: order[platIdx], dessert: order[dessertIdx], remp: order[rempIdx] };
+        return { plat: order[platIdx], dessert: order[dessertIdx], remp: order[rempIdx] };
     }
 
     window.switchPage = function(pageId) {
@@ -551,6 +547,7 @@
         document.getElementById('teamCount').innerText = participants.length;
     }
 
+    // Écoute de l'équipe
     onSnapshot(doc(db, "planning", "global_team"), (teamSnap) => {
         if (teamSnap.exists()) {
             const teamData = teamSnap.data();
@@ -588,6 +585,9 @@
             }
         });
     }
+
+    // Écoute initiale du mois
+    connectToMonth(currentMonth);
 
     function initInputs() {
         const container = document.getElementById('inputsContainer');
@@ -660,42 +660,45 @@
     window.togglePresenceCloud = function(globalIndex) {
         if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = { presences: [], ratingsPlat: {}, ratingsDessert: {} };
         let currentPresences = thursdaysData[globalIndex].presences || [];
-        
+
         if (currentPresences.includes(currentUser)) {
             currentPresences = currentPresences.filter(p => p !== currentUser);
+            if (thursdaysData[globalIndex].ratingsPlat) delete thursdaysData[globalIndex].ratingsPlat[currentUser];
+            if (thursdaysData[globalIndex].ratingsDessert) delete thursdaysData[globalIndex].ratingsDessert[currentUser];
         } else {
             currentPresences.push(currentUser);
         }
-        
+
         thursdaysData[globalIndex].presences = currentPresences;
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
-    window.rateWeekCloud = function(globalIndex, type, starValue) {
-        if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = { presences: [], ratingsPlat: {}, ratingsDessert: {} };
-        if (!thursdaysData[globalIndex].ratingsPlat) thursdaysData[globalIndex].ratingsPlat = {};
-        if (!thursdaysData[globalIndex].ratingsDessert) thursdaysData[globalIndex].ratingsDessert = {};
+    window.rateWeekCloud = function(globalIndex, type, score) {
+        if (!thursdaysData[globalIndex]) return;
+        const currentPresences = thursdaysData[globalIndex].presences || [];
+        if (!currentPresences.includes(currentUser)) return alert("Tu dois te mettre présent(e) pour voter !");
 
-        const key = type === 'plat' ? 'ratingsPlat' : 'ratingsDessert';
-        
-        if (thursdaysData[globalIndex][key][currentUser] === starValue) {
-            delete thursdaysData[globalIndex][key][currentUser];
+        if (type === 'plat') {
+            if (!thursdaysData[globalIndex].ratingsPlat) thursdaysData[globalIndex].ratingsPlat = {};
+            thursdaysData[globalIndex].ratingsPlat[currentUser] = score;
         } else {
-            thursdaysData[globalIndex][key][currentUser] = starValue;
+            if (!thursdaysData[globalIndex].ratingsDessert) thursdaysData[globalIndex].ratingsDessert = {};
+            thursdaysData[globalIndex].ratingsDessert[currentUser] = score;
         }
 
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
+    // Générateur des cartes du mois courant
     function generatePlanningCards() {
         const container = document.getElementById('cardsContainer');
         container.innerHTML = "";
 
-        const year = parseInt(currentMonth.split("-")[0]);
-        const monthIdx = parseInt(currentMonth.split("-")[1]) - 1;
-        const thursdays = getThursdaysInMonthWithGlobalIndex(year, monthIdx);
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
 
-        thursdays.forEach((thurs, i) => {
+        thursdays.forEach((thurs, idx) => {
             const gIdx = thurs.globalIndex;
             const roles = getRolesForGlobalIndex(gIdx);
             
@@ -706,70 +709,63 @@
 
             const isPresent = presences.includes(currentUser);
 
-            // Calculs moyennes étoiles
+            // Calculs moyennes
             const pVotes = Object.values(ratingsPlat);
-            const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0) / pVotes.length).toFixed(1) : "-";
-            
+            const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";
             const dVotes = Object.values(ratingsDessert);
-            const avgD = dVotes.length ? (dVotes.reduce((a,b)=>a+b,0) / dVotes.length).toFixed(1) : "-";
+            const avgD = dVotes.length ? (dVotes.reduce((a,b)=>a+b,0)/dVotes.length).toFixed(1) : "-";
 
             const card = document.createElement('div');
-            card.className = `semaine-card sem-${(i % 5) + 1}`;
+            card.className = `semaine-card sem-${(idx % 5) + 1}`;
 
-            let selectPlatHTML = participants.map(p => `<option value="${p}" ${p === roles.plat ? 'selected' : ''}>${p}</option>`).join('');
-            let selectDessertHTML = participants.map(p => `<option value="${p}" ${p === roles.dessert ? 'selected' : ''}>${p}</option>`).join('');
-            let selectRempHTML = participants.map(p => `<option value="${p}" ${p === roles.remp ? 'selected' : ''}>${p}</option>`).join('');
+            let selectPlat = participants.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${p}</option>`).join('');
+            let selectDessert = participants.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${p}</option>`).join('');
+            let selectRemp = participants.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${p}</option>`).join('');
 
             let starsPlatHTML = "";
             let starsDessertHTML = "";
             for(let s=1; s<=5; s++) {
-                const activeP = (ratingsPlat[currentUser] >= s) ? 'active' : '';
-                starsPlatHTML += `<span class="star ${activeP}" onclick="rateWeekCloud(${gIdx}, 'plat', ${s})">★</span>`;
-                
-                const activeD = (ratingsDessert[currentUser] >= s) ? 'active' : '';
-                starsDessertHTML += `<span class="star ${activeD}" onclick="rateWeekCloud(${gIdx}, 'dessert', ${s})">★</span>`;
+                starsPlatHTML += `<span class="star ${(ratingsPlat[currentUser]||0)>=s?'active':''}" onclick="rateWeekCloud(${gIdx}, 'plat', ${s})">★</span>`;
+                starsDessertHTML += `<span class="star ${(ratingsDessert[currentUser]||0)>=s?'active':''}" onclick="rateWeekCloud(${gIdx}, 'dessert', ${s})">★</span>`;
             }
 
-            let presencesFormatted = presences.map(p => `${customEmojisMapping[p] || "🦊"} ${p}`).join(', ');
+            let presencesListHTML = presences.map(p => `${customEmojisMapping[p]||"🦊"} ${p}`).join(', ');
+            const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";
 
             card.innerHTML = `
-                <div class="card-header">
-                    <span>${thurs.dateText}</span>
-                </div>
+                <div class="card-header"><span>${thurs.dateText}</span></div>
                 
                 <div class="role-box">
                     <span class="role-label">🧑‍🍳 Plat Principal</span>
-                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'plat', this.value)">${selectPlatHTML}</select>
+                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'plat', this.value)">${selectPlat}</select>
                 </div>
-
                 <div class="role-box">
                     <span class="role-label">🧁 Dessert</span>
-                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'dessert', this.value)">${selectDessertHTML}</select>
+                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'dessert', this.value)">${selectDessert}</select>
                 </div>
-
                 <div class="role-box">
                     <span class="role-label">🛟 Remplaçant</span>
-                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'remp', this.value)">${selectRempHTML}</select>
+                    <select class="role-select-custom" onchange="updateRoleManually(${gIdx}, 'remp', this.value)">${selectRemp}</select>
                 </div>
 
                 <div class="presence-zone">
                     <div class="presence-header">
-                        <span>Présents : ${presences.length}</span>
-                        <button class="presence-btn ${isPresent ? 'active' : ''}" onclick="togglePresenceCloud(${gIdx})">
+                        <span>Inscrits : ${presences.length}</span>
+                        <button class="presence-btn ${isPresent?'active':''}" onclick="togglePresenceCloud(${gIdx})">
                             ${isPresent ? '✅ Présent' : '❌ Absent'}
                         </button>
                     </div>
-                    <div class="presence-list">${presencesFormatted || "Personne pour le moment"}</div>
+                    <div class="presence-list">${presencesListHTML || "Aucun inscrit pour le moment"}</div>
                 </div>
 
-                <div class="rating-box">
+                <div class="rating-box" ${ratingStyle}>
                     <div class="rating-row">
-                        <span class="role-label">Note Plat</span>
+                        <span class="role-label">Note Plat ${isPresent?'':'🔒'}</span>
                         <div class="stars">${starsPlatHTML}</div>
                         <span class="avg-rating">⭐ ${avgP}</span>
                     </div>
                     <div class="rating-row">
-                        <span class="role-label">Note Dessert</span>
+                        <span class="role-label">Note Dessert ${isPresent?'':'🔒'}</span>
                         <div class="stars">${starsDessertHTML}</div>
                         <span class="avg-rating">⭐ ${avgD}</span>
                     </div>
@@ -779,74 +775,72 @@
         });
     }
 
+    // Système de statistiques et classement
     function generateStats() {
         const tbody = document.getElementById('statsTableBody');
         tbody.innerHTML = "";
 
         let userScores = {};
-        participants.forEach(p => { userScores[p] = { totalPoints: 0, totalVotes: 0, totalCooked: 0 }; });
 
-        const year = parseInt(currentMonth.split("-")[0]);
-        const monthIdx = parseInt(currentMonth.split("-")[1]) - 1;
-        const thursdays = getThursdaysInMonthWithGlobalIndex(year, monthIdx);
+        // Parcourir toutes les données téléchargées du mois en cours
+        Object.keys(thursdaysData).forEach(gIdx => {
+            const roles = getRolesForGlobalIndex(parseInt(gIdx));
+            const dayData = thursdaysData[gIdx];
 
-        thursdays.forEach(thurs => {
-            const gIdx = thurs.globalIndex;
-            const roles = getRolesForGlobalIndex(gIdx);
-            const dayData = thursdaysData[gIdx] || { ratingsPlat: {}, ratingsDessert: {} };
-
-            if(roles.plat && userScores[roles.plat]) {
-                const pVotes = Object.values(dayData.ratingsPlat || {});
-                if(pVotes.length > 0) {
-                    userScores[roles.plat].totalPoints += pVotes.reduce((a,b)=>a+b,0);
-                    userScores[roles.plat].totalVotes += pVotes.length;
+            if(dayData.ratingsPlat && roles.plat !== "Aucun") {
+                const votes = Object.values(dayData.ratingsPlat);
+                if(votes.length) {
+                    if(!userScores[roles.plat]) userScores[roles.plat] = { totalScore: 0, count: 0, mealsCount: 0 };
+                    userScores[roles.plat].totalScore += (votes.reduce((a,b)=>a+b,0) / votes.length);
+                    userScores[roles.plat].count++;
+                    userScores[roles.plat].mealsCount++;
                 }
-                userScores[roles.plat].totalCooked++;
             }
-
-            if(roles.dessert && userScores[roles.dessert]) {
-                const dVotes = Object.values(dayData.ratingsDessert || {});
-                if(dVotes.length > 0) {
-                    userScores[roles.dessert].totalPoints += dVotes.reduce((a,b)=>a+b,0);
-                    userScores[roles.dessert].totalVotes += dVotes.length;
+            if(dayData.ratingsDessert && roles.dessert !== "Aucun") {
+                const votes = Object.values(dayData.ratingsDessert);
+                if(votes.length) {
+                    if(!userScores[roles.dessert]) userScores[roles.dessert] = { totalScore: 0, count: 0, mealsCount: 0 };
+                    userScores[roles.dessert].totalScore += (votes.reduce((a,b)=>a+b,0) / votes.length);
+                    userScores[roles.dessert].count++;
                 }
-                userScores[roles.dessert].totalCooked++;
             }
         });
 
-        let ranking = [];
-        Object.keys(userScores).forEach(name => {
-            const data = userScores[name];
-            const finalScore = data.totalVotes > 0 ? (data.totalPoints / data.totalVotes).toFixed(2) : "0.00";
-            ranking.push({ name, score: parseFloat(finalScore), cooked: data.totalCooked, hasVotes: data.totalVotes > 0 });
+        let leaderboard = [];
+        participants.forEach(p => {
+            if(userScores[p] && userScores[p].count > 0) {
+                leaderboard.push({
+                    name: p,
+                    avg: (userScores[p].totalScore / userScores[p].count).toFixed(2),
+                    meals: userScores[p].mealsCount || 0
+                });
+            }
         });
 
-        ranking.sort((a, b) => {
-            if (b.hasVotes !== a.hasVotes) return b.hasVotes - a.hasVotes;
-            return b.score - a.score;
-        });
+        // Trier du plus grand au plus petit score moyenne
+        leaderboard.sort((a,b) => b.avg - a.avg);
 
-        ranking.forEach((user, index) => {
+        if(leaderboard.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Aucune note enregistrée ce mois-ci 🍽️</td></tr>`;
+            return;
+        }
+
+        leaderboard.forEach((chef, index) => {
+            const rank = index + 1;
+            let rankClass = `badge-rank rank-${rank}`;
+            if(rank > 3) rankClass = `badge-rank`;
+
             const tr = document.createElement('tr');
-            let rankBadge = `<span class="badge-rank">${index + 1}</span>`;
-            if(index === 0 && user.hasVotes) rankBadge = `<span class="badge-rank rank-1">🥇</span>`;
-            if(index === 1 && user.hasVotes) rankBadge = `<span class="badge-rank rank-2">🥈</span>`;
-            if(index === 2 && user.hasVotes) rankBadge = `<span class="badge-rank rank-3">🥉</span>`;
-
-            const displayScore = user.hasVotes ? `⭐ ${user.score.toFixed(1)}` : `🫙 Aucun vote`;
-            const emoji = customEmojisMapping[user.name] || "🦊";
-
             tr.innerHTML = `
-                <td>${rankBadge}</td>
-                <td style="font-weight:700;">${emoji} ${user.name}</td>
-                <td style="font-weight:800; color:#0284c7;">${displayScore}</td>
-                <td style="color:var(--text-muted); font-size:0.8rem;">🍳 ${user.cooked}</td>
+                <td><span class="${rankClass}">${rank}</span></td>
+                <td style="font-weight:700;">${customEmojisMapping[chef.name]||"🦊"} ${chef.name}</td>
+                <td style="font-weight:800; color:#0284c7;">⭐ ${chef.avg}</td>
+                <td style="color:var(--text-muted); font-size:0.85rem;">${chef.meals} cuisiné(s)</td>
             `;
             tbody.appendChild(tr);
         });
     }
-
-    connectToMonth(currentMonth);
 </script>
+
 </body>
 </html>

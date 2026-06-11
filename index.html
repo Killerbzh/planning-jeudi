@@ -39,6 +39,14 @@
             display: flex; justify-content: center; align-items: center; padding: 16px;
             overflow-y: auto;
         }
+        
+        /* Écran d'erreur de double connexion */
+        .session-conflict-screen {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: #0f172a; color: white; z-index: 3000;
+            display: none; justify-content: center; align-items: center; padding: 16px;
+        }
+
         .welcome-card {
             background: #1e293b; padding: 30px 20px; border-radius: 20px;
             max-width: 480px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
@@ -279,6 +287,15 @@
         </div>
     </div>
 
+    <!-- ÉCRAN CONFLIT DE SESSION (DOUBLE CONNEXION) -->
+    <div id="sessionConflictScreen" class="session-conflict-screen">
+        <div class="welcome-card" style="border: 2px solid #f43f5e;">
+            <h2 style="color: #f43f5e;">⚠️ Connexion interrompue</h2>
+            <p>Quelqu'un d'autre s'est connecté à ce profil depuis un autre appareil ou un autre onglet.</p>
+            <button class="primary-btn" onclick="window.location.reload()" style="background: #f43f5e;">Actualiser et reprendre la main</button>
+        </div>
+    </div>
+
     <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Paramètres</span></div>
@@ -393,6 +410,7 @@
     let currentMonth = "2026-06";
     let currentUser = "";
     let unsubscribeMonth = null;
+    let unsubscribeSession = null;
     let isEditingTeam = false;
 
     const monthNames = {
@@ -504,6 +522,45 @@
         connectToMonth(currentMonth);
     });
 
+    // Génération et gestion d'une clé de session unique par onglet
+    function generateSessionId() {
+        let token = sessionStorage.getItem('jeudiCuistot_session_token');
+        if (!token) {
+            token = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            sessionStorage.setItem('jeudiCuistot_session_token', token);
+        }
+        return token;
+    }
+
+    // Surveille en temps réel si un autre jeton prend le contrôle du même profil
+    function listenToUserSession(userName) {
+        if (unsubscribeSession) unsubscribeSession();
+        
+        const mySessionToken = generateSessionId();
+
+        setDoc(doc(db, "sessions", userName), { 
+            activeToken: mySessionToken, 
+            lastActive: Date.now() 
+        }, { merge: true });
+
+        unsubscribeSession = onSnapshot(doc(db, "sessions", userName), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.activeToken && data.activeToken !== mySessionToken) {
+                    handleSessionConflict();
+                }
+            }
+        });
+    }
+
+    function handleSessionConflict() {
+        if (unsubscribeSession) unsubscribeSession();
+        if (unsubscribeMonth) unsubscribeMonth();
+        
+        localStorage.removeItem('jeudiCuistot_user');
+        document.getElementById('sessionConflictScreen').style.display = 'flex';
+    }
+
     function checkUserSession() {
         const savedUser = localStorage.getItem('jeudiCuistot_user');
         if (savedUser && participants.includes(savedUser)) {
@@ -511,6 +568,7 @@
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            listenToUserSession(currentUser);
         } else {
             document.getElementById('welcomeScreen').style.display = 'flex';
         }
@@ -531,6 +589,7 @@
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            listenToUserSession(currentUser);
         }
     });
 
@@ -549,11 +608,13 @@
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            listenToUserSession(currentUser);
         });
     });
 
     window.triggerLogout = function() {
         if(confirm("Voulez-vous changer de profil ou vous déconnecter ?")) {
+            if (unsubscribeSession) unsubscribeSession();
             localStorage.removeItem('jeudiCuistot_user');
             currentUser = "";
             fillExistingProfilesDropdown();
@@ -717,8 +778,15 @@
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
-    // Gestion de l'ajout des photos (liens URL)
+    // Gestion de l'ajout des photos (Uniquement par les chefs affectés)
     window.addPhotoLink = function(globalIndex, type) {
+        const roles = getRolesForGlobalIndex(globalIndex);
+        const chefConcerne = type === 'plat' ? roles.plat : roles.dessert;
+
+        if (currentUser !== chefConcerne) {
+            return alert(`⛔ Seul(e) ${chefConcerne} peut ajouter ou modifier la photo de son ${type === 'plat' ? 'plat' : 'dessert'} !`);
+        }
+
         if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = {};
         
         const label = type === 'plat' ? "du plat principal" : "du dessert";

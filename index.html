@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Édition Premium Mobile</title>
+    <title>Le Planning des Jeudis : Édition Premium Mobile Fix</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -43,7 +43,7 @@
             flex-direction: row;
         }
 
-        /* SIDEBAR MODERNE SOMBRE (PC) */
+        /* SIDEBAR PC */
         .sidebar {
             width: 280px;
             background-color: var(--sidebar-bg);
@@ -135,7 +135,7 @@
         .page-section { display: none; }
         .page-section.active { display: block; }
 
-        /* PANNEAU DE CONFIGURATION ÉPURÉ */
+        /* PANNEAU DE CONFIGURATION */
         .section-panel {
             background: white;
             border-radius: 20px;
@@ -185,7 +185,7 @@
         }
         .input-group input:focus { outline: none; }
 
-        /* GRILLE DE CARTES ULTRA DESIGN */
+        /* GRILLE DE CARTES */
         .cards-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -244,7 +244,7 @@
             font-weight: 700;
         }
 
-        /* NOTATION ÉTOILES PREMIUM */
+        /* NOTATION ÉTOILES */
         .rating-box {
             margin-top: 4px;
             display: flex;
@@ -268,7 +268,7 @@
             transform: scale(1.15);
         }
 
-        /* PAGE DES STATS STYLE TABLEAU DE BORD */
+        /* TABLEAU DE STATS */
         .stats-container {
             background: white;
             border-radius: 24px;
@@ -316,13 +316,13 @@
         .rank-2 { background: #e2e8f0; color: #475569; }
         .rank-3 { background: #ffedd5; color: #9a3412; }
 
-        /* REGLAGES RESPONSIVE MOBILE EXCLUSIFS */
+        /* DESIGN ADAPTATIF MOBILE (CORRIGÉ) */
         @media (max-width: 768px) {
             body {
                 flex-direction: column;
             }
 
-            /* On cache la sidebar PC pour la mettre en bas */
+            /* On transforme la sidebar PC en barre fixe en bas */
             .sidebar {
                 position: fixed;
                 bottom: 0;
@@ -340,9 +340,10 @@
             }
 
             .logo-area {
-                display: none; /* Cache le logo sur mobile pour gagner de la place */
+                display: none;
             }
 
+            /* On cible uniquement le texte des boutons de la navigation pour mobile */
             .nav-btn {
                 flex-direction: column;
                 gap: 4px;
@@ -355,11 +356,11 @@
             }
 
             .nav-btn:nth-child(4) {
-                display: none; /* Cache l'option d'impression papier inutile sur mobile */
+                display: none;
             }
 
             .main-content {
-                padding: 20px 16px 90px 16px; /* 90px en bas pour ne pas être masqué par la barre */
+                padding: 20px 16px 90px 16px;
             }
 
             h1 {
@@ -374,7 +375,7 @@
             }
 
             .inputs-grid {
-                grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+                grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
                 gap: 10px;
             }
 
@@ -387,7 +388,7 @@
             }
 
             .cards-grid {
-                grid-template-columns: 1fr; /* Une seule carte par ligne sur mobile */
+                grid-template-columns: 1fr;
                 gap: 16px;
             }
 
@@ -402,7 +403,7 @@
             }
         }
 
-        /* Attribution des thèmes couleurs */
+        /* Couleurs thématiques */
         .sem-1 { background: var(--grad-1); } .sem-2 { background: var(--grad-2); }
         .sem-3 { background: var(--grad-3); } .sem-4 { background: var(--grad-4); }
         .sem-5 { background: var(--grad-5); } .sem-6 { background: var(--grad-6); }
@@ -445,4 +446,152 @@
                 <table class="stats-table">
                     <thead>
                         <tr>
-                            <th style="width: 80px;">Rang
+                            <th style="width: 80px;">Rang</th>
+                            <th>Nom</th>
+                            <th>Score Moyen</th>
+                            <th>Prestations</th>
+                        </tr>
+                    </thead>
+                    <tbody id="statsTableBody"></tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+
+<script>
+    const baseRotation = [
+        { plat: 1, dessert: 2, remp: 3 }, { plat: 4, dessert: 5, remp: 6 },
+        { plat: 7, dessert: 8, remp: 9 }, { plat: 10, dessert: 1, remp: 2 },
+        { plat: 3, dessert: 4, remp: 5 }, { plat: 6, dessert: 7, remp: 8 },
+        { plat: 9, dessert: 10, remp: 1 }, { plat: 2, dessert: 3, remp: 4 },
+        { plat: 5, dessert: 6, remp: 7 }, { plat: 8, dessert: 9, remp: 10 }
+    ];
+
+    const emojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦊", "🦄", "🦅"];
+    
+    let participants = JSON.parse(localStorage.getItem('premiumJeudiNames')) || 
+                       ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
+
+    let ratings = JSON.parse(localStorage.getItem('premiumJeudiRatings')) || [0, 0, 0, 0, 0, 0, 0, 0, 0, 0];
+
+    function switchPage(pageId) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+        document.getElementById(`page-${pageId}`).classList.add('active');
+        document.getElementById(`btn-${pageId}`).classList.add('active');
+        if(pageId === 'stats') generateStats();
+    }
+
+    const inputsContainer = document.getElementById('inputsContainer');
+    participants.forEach((name, index) => {
+        const div = document.createElement('div');
+        div.className = 'input-group';
+        div.innerHTML = `
+            <span style="margin-right:8px; font-size:1rem;">${emojis[index % emojis.length]}</span>
+            <input type="text" value="${name}" data-index="${index}" oninput="updateName(this)">
+        `;
+        inputsContainer.appendChild(div);
+    });
+
+    function updateName(input) {
+        const index = input.dataset.index;
+        participants[index] = input.value || `Collaborateur ${parseInt(index) + 1}`;
+        localStorage.setItem('premiumJeudiNames', JSON.stringify(participants));
+        generatePlanningCards();
+    }
+
+    function rateWeek(weekIndex, starRating) {
+        ratings[weekIndex] = starRating;
+        localStorage.setItem('premiumJeudiRatings', JSON.stringify(ratings));
+        generatePlanningCards();
+    }
+
+    function generatePlanningCards() {
+        const cardsContainer = document.getElementById('cardsContainer');
+        cardsContainer.innerHTML = '';
+
+        baseRotation.forEach((semaine, i) => {
+            const card = document.createElement('div');
+            card.className = `semaine-card sem-${i + 1}`;
+            
+            const platName = participants[semaine.plat - 1];
+            const dessertName = participants[semaine.dessert - 1];
+            const rempName = participants[semaine.remp - 1];
+            const currentRating = ratings[i];
+
+            let starsHTML = '';
+            for(let s = 1; s <= 5; s++) {
+                starsHTML += `<span class="star ${s <= currentRating ? 'active' : ''}" onclick="rateWeek(${i}, ${s})">★</span>`;
+            }
+
+            card.innerHTML = `
+                <div class="card-header">
+                    <span>Semaine ${i + 1}</span>
+                    <span style="font-size:0.75rem; opacity:0.6; font-weight:500;">JEUDI</span>
+                </div>
+                <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
+                <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
+                <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
+                <div class="rating-box">
+                    <span class="role-label">Évaluer le repas</span>
+                    <div class="stars">${starsHTML}</div>
+                </div>
+            `;
+            cardsContainer.appendChild(card);
+        });
+    }
+
+    function generateStats() {
+        const tbody = document.getElementById('statsTableBody');
+        tbody.innerHTML = '';
+
+        let playerStats = participants.map(name => ({ name, totalStars: 0, repasComptes: 0 }));
+
+        baseRotation.forEach((semaine, i) => {
+            const note = ratings[i];
+            if (note > 0) {
+                const chefIndex = Float32Array;
+                const chefIdx = semaine.plat - 1;
+                playerStats[chefIdx].totalStars += note;
+                playerStats[chefIdx].repasComptes += 1;
+            }
+        });
+
+        playerStats.forEach(p => {
+            p.moyenne = p.repasComptes > 0 ? (p.totalStars / p.repasComptes).toFixed(1) : "N/A";
+        });
+
+        playerStats.sort((a, b) => {
+            if (a.moyenne === "N/A") return 1;
+            if (b.moyenne === "N/A") return -1;
+            return parseFloat(b.moyenne) - parseFloat(a.moyenne);
+        });
+
+        playerStats.forEach((p, index) => {
+            let rankClass = "";
+            let rankText = index + 1;
+            if(p.moyenne !== "N/A") {
+                if(index === 0) rankClass = "rank-1";
+                if(index === 1) rankClass = "rank-2";
+                if(index === 2) rankClass = "rank-3";
+            }
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="badge-rank ${rankClass}">${rankText}</span></td>
+                <td style="font-weight:700; color:#1e293b;">${p.name}</td>
+                <td style="color:${p.moyenne !== 'N/A' ? '#eab308' : '#94a3b8'}; font-weight:800; font-size:1rem;">
+                    ${p.moyenne !== 'N/A' ? p.moyenne + ' ★' : 'Aucune note'}
+                </td>
+                <td style="color:var(--text-muted); font-weight:500;">${p.repasComptes} fois chef</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    }
+
+    generatePlanningCards();
+</script>
+
+</body>
+</html>

@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Rotation Réelle</title>
+    <title>Le Planning des Jeudis : Sur Mesure</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -78,9 +78,17 @@
         .page-section.active { display: block; }
 
         .section-panel { background: white; border-radius: 20px; padding: 25px; box-shadow: var(--card-shadow); margin-bottom: 35px; }
-        .panel-title { margin-top: 0; margin-bottom: 20px; font-size: 1.15rem; font-weight: 700; }
-        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
+        .panel-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; }
+        .panel-title { margin: 0; font-size: 1.15rem; font-weight: 700; }
         
+        .add-user-btn {
+            background: #0284c7; color: white; border: none; padding: 8px 14px;
+            border-radius: 10px; font-weight: 700; font-size: 0.85rem; cursor: pointer;
+            transition: background 0.2s;
+        }
+        .add-user-btn:hover { background: #0369a1; }
+
+        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 14px; }
         .input-group { display: flex; align-items: center; background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 10px 14px; }
         .input-group input { border: none; background: transparent; width: 100%; font-size: 0.95rem; color: var(--text-main); font-weight: 600; }
         .input-group input:focus { outline: none; }
@@ -91,7 +99,13 @@
         
         .role-box { display: flex; flex-direction: column; background: rgba(255, 255, 255, 0.08); padding: 10px 14px; border-radius: 14px; }
         .role-label { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; opacity: 0.7; margin-bottom: 2px; }
-        .role-name { font-size: 1rem; font-weight: 700; }
+        
+        .role-select-custom {
+            background: transparent; border: none; color: white; font-size: 1rem;
+            font-weight: 700; cursor: pointer; outline: none; width: 100%;
+            padding: 2px 0;
+        }
+        .role-select-custom option { color: var(--text-main); font-weight: 600; }
 
         .presence-zone { background: rgba(0, 0, 0, 0.15); border-radius: 14px; padding: 12px; font-size: 0.85rem; }
         .presence-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 4px; font-weight: 700; }
@@ -168,7 +182,10 @@
 
         <div id="page-aperçu" class="page-section active">
             <div class="section-panel">
-                <div class="panel-title">👥 Équipe de cuisine (Modifs des prénoms globales)</div>
+                <div class="panel-header-flex">
+                    <div class="panel-title">👥 Équipe de cuisine (Modifs des prénoms globales)</div>
+                    <button class="add-user-btn" id="addUserBtn">➕ Ajouter un cuistot</button>
+                </div>
                 <div class="inputs-grid" id="inputsContainer"></div>
             </div>
             <h2 id="planningTitle" style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Les Jeudis de Juin</h2>
@@ -210,10 +227,8 @@
     
     let participants = [...defaultParticipants];
     
-    let thursdaysData = [
-        { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
-        { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
-    ];
+    let thursdaysData = [];
+    let overrides = {}; // Contiendra les modifications manuelles de rôles par globalIndex
 
     let currentMonth = "2026-06";
     let currentUser = "Lucas";
@@ -234,7 +249,7 @@
                 if (date.getMonth() === monthIndex) {
                     thursdaysInRequestedMonth.push({
                         dateText: `Jeudi ${date.getDate()} ${monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`]}`,
-                        globalIndex: thursdaysCount // Index absolu depuis le début de l'année
+                        globalIndex: thursdaysCount
                     });
                 }
                 thursdaysCount++;
@@ -244,34 +259,40 @@
         return thursdaysInRequestedMonth;
     }
 
-    // ALGORITHME DE ROTATION UNIQUE AVEC LES DONNÉES HISTORIQUES FIXÉES
+    // ALGORITHME DE ROTATION AUTO AVEC PRISE EN COMPTE DES SURCHARGES MANUELLES
     function getRolesForGlobalIndex(globalIndex) {
-        // Le 4 juin 2026 correspond au 22ème jeudi de l'année (index 22).
-        // Le 11 juin 2026 correspond au 23ème jeudi de l'année (index 23).
-        
-        // Ordre logique basé sur ta liste de participants pour qu'ils ne se répètent pas à la suite
-        // On place Jeanne(5), Laura(1), Claribel(2), Yoann(3) stratégiquement au début pour matcher tes dates.
-        const order = [
+        // Si une modification manuelle existe pour cette date précise, on la renvoie en priorité !
+        if (overrides && overrides[globalIndex]) {
+            return {
+                plat: overrides[globalIndex].plat || "Aucun",
+                dessert: overrides[globalIndex].dessert || "Aucun",
+                remp: overrides[globalIndex].remp || "Aucun"
+            };
+        }
+
+        // Sinon, calcul algorithmique de base pour synchroniser le 4 et 11 juin
+        const baseOrder = [
             "Jeanne", "Laura", "Claribel", "Yoann", "Lucas", 
-            "Mireille", "Candices", "Killian", "Annaig", "Invité(e)"
+            "Mireille", "Candices", "Killian", "Annaig", "Ewen", "Anthony", "Clement"
         ];
 
-        // Pour coller parfaitement aux dates :
-        // Le 4 Juin (index 22) : Jeanne au Plat, Laura au Dessert, Claribel en Remplaçant
-        // Le 11 Juin (index 23) : Claribel au Plat, Yoann au Dessert, Lucas en Remplaçant
-        // Le 18 Juin (index 24) : Lucas au Plat, Mireille au Dessert, etc.
+        // Filtrer l'ordre pour s'assurer qu'on n'utilise que des membres présents dans la liste actuelle
+        const order = baseOrder.filter(n => participants.includes(n));
+        // Ajouter à la fin de la rotation les nouveaux membres créés à la main qui ne sont pas dans baseOrder
+        participants.forEach(p => {
+            if (!order.includes(p)) order.push(p);
+        });
+
+        const baseIndex = globalIndex - 22; // Alignement sur le 4 juin (index global 22)
         
-        const baseIndex = globalIndex - 22; // On décale par rapport au 4 juin
-        
-        // Formule fluide qui pioche dans l'ordre de défilement sans doublons immédiats
         const platIdx = ((baseIndex * 2) % order.length + order.length) % order.length;
         const dessertIdx = (((baseIndex * 2) + 1) % order.length + order.length) % order.length;
         const rempIdx = (((baseIndex * 2) + 2) % order.length + order.length) % order.length;
 
         return {
-            plat: order[platIdx],
-            dessert: order[dessertIdx],
-            remp: order[rempIdx]
+            plat: order[platIdx] || "Invité(e)",
+            dessert: order[dessertIdx] || "Invité(e)",
+            remp: order[rempIdx] || "Invité(e)"
         };
     }
 
@@ -295,6 +316,19 @@
         generatePlanningCards();
     });
 
+    document.getElementById('addUserBtn').addEventListener('click', () => {
+        const newName = prompt("Entrez le prénom du nouveau membre de l'équipe :");
+        if (newName && newName.trim() !== "") {
+            const cleanName = newName.trim();
+            if (!participants.includes(cleanName)) {
+                participants.push(cleanName);
+                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants });
+            } else {
+                alert("Ce nom existe déjà !");
+            }
+        }
+    });
+
     function connectToMonth(monthId) {
         if (unsubscribe) unsubscribe();
 
@@ -302,17 +336,13 @@
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 participants = data.names || [...defaultParticipants];
-                thursdaysData = data.thursdaysData || [
-                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
-                ];
+                thursdaysData = data.thursdaysData || [];
+                overrides = data.overrides || {};
             } else {
                 participants = [...defaultParticipants];
-                thursdaysData = [
-                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] },
-                    { ratings: {}, presence: [] }, { ratings: {}, presence: [] }, { ratings: {}, presence: [] }
-                ];
-                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, thursdaysData: thursdaysData });
+                thursdaysData = [];
+                overrides = {};
+                setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, thursdaysData: [], overrides: {} });
             }
             updateUserDropdown();
             initInputs();
@@ -334,7 +364,7 @@
             if(name === previousSelection) opt.selected = true;
             userSelect.appendChild(opt);
         });
-        currentUser = userSelect.value;
+        currentUser = userSelect.value || participants[0];
     }
 
     function initInputs() {
@@ -356,24 +386,46 @@
                 
                 participants[idx] = newName;
                 
+                // Mettre à jour l'historique si un nom change globalement
                 thursdaysData.forEach(t => {
-                    if (t.ratings[oldName]) { t.ratings[newName] = t.ratings[oldName]; delete t.ratings[oldName]; }
-                    const pIdx = t.presence.indexOf(oldName);
-                    if (pIdx > -1) t.presence[pIdx] = newName;
+                    if (t.ratings && t.ratings[oldName]) { t.ratings[newName] = t.ratings[oldName]; delete t.ratings[oldName]; }
+                    if (t.presence) {
+                        const pIdx = t.presence.indexOf(oldName);
+                        if (pIdx > -1) t.presence[pIdx] = newName;
+                    }
                 });
 
-                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants, thursdaysData: thursdaysData });
+                // Changer aussi dans les surcharges manuelles
+                Object.keys(overrides).forEach(k => {
+                    if(overrides[k].plat === oldName) overrides[k].plat = newName;
+                    if(overrides[k].dessert === oldName) overrides[k].dessert = newName;
+                    if(overrides[k].remp === oldName) overrides[k].remp = newName;
+                });
+
+                updateDoc(doc(db, "planning", `mois_${currentMonth}`), { names: participants, thursdaysData: thursdaysData, overrides: overrides });
             });
         });
     }
 
+    window.updateRoleManually = function(globalIndex, roleType, selectedValue) {
+        if (!overrides[globalIndex]) {
+            // Si aucune surcharge n'existait, on initialise avec les rôles auto actuels avant de modifier
+            const defaultRoles = getRolesForGlobalIndex(globalIndex);
+            overrides[globalIndex] = { ...defaultRoles };
+        }
+        overrides[globalIndex][roleType] = selectedValue;
+        updateDoc(doc(db, "planning", `mois_${currentMonth}`), { overrides: overrides });
+    }
+
     window.rateWeekCloud = function(weekIndex, starRating) {
+        if(!thursdaysData[weekIndex]) thursdaysData[weekIndex] = { ratings: {}, presence: [] };
         if(!thursdaysData[weekIndex].ratings) thursdaysData[weekIndex].ratings = {};
         thursdaysData[weekIndex].ratings[currentUser] = starRating;
         updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
     }
 
     window.togglePresence = function(weekIndex) {
+        if(!thursdaysData[weekIndex]) thursdaysData[weekIndex] = { ratings: {}, presence: [] };
         if(!thursdaysData[weekIndex].presence) thursdaysData[weekIndex].presence = [];
         const presenceList = thursdaysData[weekIndex].presence;
         const pIdx = presenceList.indexOf(currentUser);
@@ -384,6 +436,10 @@
             presenceList.push(currentUser);
         }
         updateDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData });
+    }
+
+    function buildOptionsHTML(selectedName) {
+        return participants.map(p => `<option value="${p}" ${p === selectedName ? 'selected' : ''}>${p}</option>`).join('');
     }
 
     function generatePlanningCards() {
@@ -399,7 +455,6 @@
             const card = document.createElement('div');
             card.className = `semaine-card sem-${i + 1}`;
             
-            // On récupère les rôles calculés proprement selon l'historique demandé
             const roles = getRolesForGlobalIndex(jeudiInfo.globalIndex);
 
             if(!thursdaysData[i]) thursdaysData[i] = { ratings: {}, presence: [] };
@@ -430,9 +485,24 @@
                     <span>${jeudiInfo.dateText}</span>
                     <span class="avg-rating">${avgText}</span>
                 </div>
-                <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${roles.plat}</span></div>
-                <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${roles.dessert}</span></div>
-                <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${roles.remp}</span></div>
+                <div class="role-box">
+                    <span class="role-label">🍲 Plat Principal</span>
+                    <select class="role-select-custom" onchange="updateRoleManually(${jeudiInfo.globalIndex}, 'plat', this.value)">
+                        ${buildOptionsHTML(roles.plat)}
+                    </select>
+                </div>
+                <div class="role-box">
+                    <span class="role-label">🍰 Dessert</span>
+                    <select class="role-select-custom" onchange="updateRoleManually(${jeudiInfo.globalIndex}, 'dessert', this.value)">
+                        ${buildOptionsHTML(roles.dessert)}
+                    </select>
+                </div>
+                <div class="role-box">
+                    <span class="role-label">🔄 Remplaçant</span>
+                    <select class="role-select-custom" onchange="updateRoleManually(${jeudiInfo.globalIndex}, 'remp', this.value)">
+                        ${buildOptionsHTML(roles.remp)}
+                    </select>
+                </div>
                 
                 <div class="presence-zone">
                     <div class="presence-header">

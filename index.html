@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Le Planning des Jeudis : Édition Live Mensuelle</title>
+    <title>Le Planning des Jeudis : Édition Live Calendrier</title>
     <style>
         :root {
             --bg-color: #f4f7f9;
@@ -161,13 +161,13 @@
                 <div class="panel-title">👥 Équipe de cuisine (Modifs en direct sur ce mois)</div>
                 <div class="inputs-grid" id="inputsContainer"></div>
             </div>
-            <h2 id="planningTitle" style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Les Jeudis du Mois</h2>
+            <h2 id="planningTitle" style="font-weight:800; font-size:1.3rem; margin-bottom:20px; color:#1e293b;">📅 Les Jeudis de Juin</h2>
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
         <div id="page-stats" class="page-section">
             <div class="stats-container">
-                <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Classement du Mois</h2>
+                <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.4rem; margin-bottom:6px;">🏆 Classement de Juin</h2>
                 <p style="color:var(--text-muted); margin-bottom:25px; margin-top:0; font-size:0.9rem;">Calculé selon la satisfaction moyenne du plat principal sur le mois sélectionné.</p>
                 <table class="stats-table">
                     <thead>
@@ -183,7 +183,7 @@
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, updateDoc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-    // Tes clés de configuration
+    // Configuration Firebase automatique
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAF1v0QNw9h5spegq7lV2-zE",
         authDomain: "planning-jeudi.firebaseapp.com",
@@ -196,7 +196,6 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // Une rotation classique simplifiée pour 5 jeudis maximum par mois
     const baseRotation = [
         { plat: 1, dessert: 2, remp: 3 },
         { plat: 4, dessert: 5, remp: 6 },
@@ -205,19 +204,37 @@
         { plat: 3, dessert: 4, remp: 5 }
     ];
     const emojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦊", "🦄", "🦅"];
-    
-    // Valeurs par défaut
     let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Invité(e)"];
     
     let participants = [...defaultParticipants];
     let ratings = [0, 0, 0, 0, 0];
-    let currentMonth = "2026-06"; // Juin par défaut
+    let currentMonth = "2026-06";
     let unsubscribe = null;
 
     const monthNames = {
         "2026-06": "Juin", "2026-07": "Juillet", "2026-08": "Août",
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
+
+    // 📅 Fonction magique qui trouve les vraies dates des Jeudis du mois choisi
+    function getThursdaysInMonth(year, monthIndex) {
+        let date = new Date(year, monthIndex, 1);
+        let thursdays = [];
+        
+        // On cherche le premier jeudi
+        while (date.getDay() !== 4) {
+            date.setDate(date.getDate() + 1);
+        }
+        
+        // On récupère tous les jeudis de ce mois
+        while (date.getMonth() === monthIndex) {
+            let dayStr = date.getDate();
+            let monthStr = monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`];
+            thursdays.push(`Jeudi ${dayStr} ${monthStr}`);
+            date.setDate(date.getDate() + 7);
+        }
+        return thursdays;
+    }
 
     window.switchPage = function(pageId) {
         document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
@@ -227,7 +244,6 @@
         if(pageId === 'stats') generateStats();
     }
 
-    // Écouter le changement de mois sur l'écran
     document.getElementById('monthSelect').addEventListener('change', (e) => {
         currentMonth = e.target.value;
         document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
@@ -235,9 +251,8 @@
         connectToMonth(currentMonth);
     });
 
-    // Fonction de connexion dynamique au mois sélectionné dans Firebase
     function connectToMonth(monthId) {
-        if (unsubscribe) unsubscribe(); // On coupe l'ancienne écoute
+        if (unsubscribe) unsubscribe();
 
         unsubscribe = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
             if (docSnap.exists()) {
@@ -245,7 +260,6 @@
                 participants = data.names || [...defaultParticipants];
                 ratings = data.ratings || [0, 0, 0, 0, 0];
             } else {
-                // Si le mois n'existe pas encore dans Firebase, on le crée propre !
                 participants = [...defaultParticipants];
                 ratings = [0, 0, 0, 0, 0];
                 setDoc(doc(db, "planning", `mois_${monthId}`), { names: participants, ratings: ratings });
@@ -287,7 +301,18 @@
         const cardsContainer = document.getElementById('cardsContainer');
         cardsContainer.innerHTML = '';
 
+        // On sépare l'année et le mois (ex: "2026-06" -> year: 2026, month: 5)
+        const parts = currentMonth.split('-');
+        const year = parseInt(parts[0]);
+        const monthIndex = parseInt(parts[1]) - 1;
+        
+        // On génère la liste des vraies dates pour ce mois
+        const thursdaysDates = getThursdaysInMonth(year, monthIndex);
+
         baseRotation.forEach((semaine, i) => {
+            // S'il n'y a que 4 jeudis ce mois-ci, on n'affiche pas de 5ème carte inutile
+            if (i >= thursdaysDates.length) return;
+
             const card = document.createElement('div');
             card.className = `semaine-card sem-${i + 1}`;
             
@@ -302,7 +327,7 @@
             }
 
             card.innerHTML = `
-                <div class="card-header"><span>Jeudi Semaine ${i + 1}</span><span style="font-size:0.75rem; opacity:0.6;">${monthNames[currentMonth].toUpperCase()}</span></div>
+                <div class="card-header"><span>${thursdaysDates[i]}</span><span style="font-size:0.75rem; opacity:0.6;">2026</span></div>
                 <div class="role-box"><span class="role-label">🍲 Plat Principal</span><span class="role-name">${platName}</span></div>
                 <div class="role-box"><span class="role-label">🍰 Dessert</span><span class="role-name">${dessertName}</span></div>
                 <div class="role-box"><span class="role-label">🔄 Remplaçant</span><span class="role-name">${rempName}</span></div>
@@ -350,7 +375,6 @@
         });
     }
 
-    // Premier lancement sur Juin
     connectToMonth(currentMonth);
 </script>
 </body>

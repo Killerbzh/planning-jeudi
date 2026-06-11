@@ -41,8 +41,8 @@
         }
         .welcome-card {
             background: #1e293b; padding: 30px 20px; border-radius: 20px;
-            max-width: 450px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
-            text-align: center;
+            max-width: 480px; width: 100%; box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+            text-align: center; margin: auto;
         }
         .welcome-card h2 { margin-top: 0; font-size: 1.6rem; font-weight: 800; }
         .welcome-card p { color: #94a3b8; font-size: 0.9rem; margin-bottom: 20px; }
@@ -55,10 +55,13 @@
             appearance: none;
         }
         
-        .emoji-picker { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; margin-top: 5px; }
+        /* Picker par thème */
+        .theme-section { margin-bottom: 14px; }
+        .theme-title { font-size: 0.75rem; font-weight: 800; color: #38bdf8; text-transform: uppercase; margin-bottom: 6px; letter-spacing: 0.5px; }
+        .emoji-picker { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
         .emoji-btn {
             font-size: 1.3rem; background: #0f172a; border: 2px solid transparent;
-            padding: 10px 0; border-radius: 10px; cursor: pointer; transition: all 0.2s;
+            padding: 8px 0; border-radius: 10px; cursor: pointer; transition: all 0.2s;
             display: flex; justify-content: center; align-items: center;
         }
         .emoji-btn.selected { border-color: var(--sidebar-active); background: rgba(56, 189, 248, 0.1); }
@@ -178,7 +181,7 @@
             .selector-wrapper { padding: 8px 12px; }
             
             .cards-grid { grid-template-columns: 1fr; gap: 16px; }
-            .emoji-picker { grid-template-columns: repeat(5, 1fr); }
+            .emoji-picker { grid-template-columns: repeat(6, 1fr); }
         }
 
         @media (min-width: 769px) {
@@ -216,11 +219,12 @@
             </div>
 
             <div class="form-control">
-                <label>🎨 Ton Avatar :</label>
-                <div class="emoji-picker" id="emojiPickerContainer"></div>
+                <label>🎨 Ton Avatar (Par Thème) :</label>
+                <!-- Zone de défilement pour pas que l'écran soit trop géant -->
+                <div style="max-height: 220px; overflow-y: auto; padding-right: 4px; text-align: left;" id="emojiThemesContainer"></div>
             </div>
 
-            <button class="primary-btn" id="createProfileBtn" style="background:#059669;">Créer & Entrer</button>
+            <button class="primary-btn" id="createProfileBtn" style="background:#059669; margin-top: 10px;">Créer & Entrer</button>
         </div>
     </div>
 
@@ -308,8 +312,20 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const availableEmojis = ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🌶️", "🥑", "🧑‍🍳", "🍕", "🧁", "🍉", "🧋"];
-    let selectedEmoji = availableEmojis[0];
+    // Émojis rangés par Thèmes
+    const emojiThemes = {
+        "🦁 Animaux": ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🐙", "🦑", "🦐", "🦩", "🦖", "🦕", "🐢", "🐝", "🦋", "🦉", "🐧", "🦔"],
+        "🧑‍🍳 Chefs & Moods": ["🧑‍🍳", "👨‍🍳", "👩‍🍳", "😎", "🥳", "🤠", "🤖", "👽", "👑", "👻", "🤡", "🎩"],
+        "🍕 Plats Salés": ["🍕", "🍔", "🍟", "🌭", "🌮", "🌯", "🥗", "🥘", "🍝", "🍜", "🍲", "🍣", "🥟", "🍳", "🥩", "🧀", "🌶️", "🥑"],
+        "🧁 Douceurs & Sucrés": ["🧁", "🍉", "🥞", " waffle ", "🧇", "🍩", "🍪", "🎂", "🍰", "🍫", "🍬", "🍭", "🍮", "🍦", "🍓", "🍒", "🍇"],
+        "🧋 Boissons": ["🧋", "🥤", "🧃", "☕", "🍻", "🥂", "🍷", "🍹"]
+    };
+
+    // Liste plate combinée pour la recherche et l'édition
+    let allAvailableEmojis = [];
+    Object.values(emojiThemes).forEach(list => { allAvailableEmojis = allAvailableEmojis.concat(list); });
+    
+    let selectedEmoji = "🦊";
 
     // Données d'équipe globales (indépendantes du mois choisi)
     let defaultParticipants = ["Lucas", "Laura", "Claribel", "Yoann", "Mireille", "Jeanne", "Candices", "Killian", "Annaig", "Ewen", "Anthony", "Clement"];
@@ -329,19 +345,40 @@
         "2026-09": "Septembre", "2026-10": "Octobre", "2026-11": "Novembre", "2026-12": "Décembre"
     };
 
-    // Init picker émojis
-    const pickerContainer = document.getElementById('emojiPickerContainer');
-    availableEmojis.forEach((emoji, i) => {
-        const btn = document.createElement('button');
-        btn.className = `emoji-btn ${i === 0 ? 'selected' : ''}`;
-        btn.innerText = emoji;
-        btn.type = "button";
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
-            btn.classList.add('selected');
-            selectedEmoji = emoji;
+    // Construction dynamique de l'interface des émojis par thèmes
+    const themesContainer = document.getElementById('emojiThemesContainer');
+    let isFirstEmoji = true;
+
+    Object.keys(emojiThemes).forEach(themeName => {
+        const section = document.createElement('div');
+        section.className = 'theme-section';
+        
+        const title = document.createElement('div');
+        title.className = 'theme-title';
+        title.innerText = themeName;
+        section.appendChild(title);
+        
+        const grid = document.createElement('div');
+        grid.className = 'emoji-picker';
+        
+        emojiThemes[themeName].forEach(emoji => {
+            const btn = document.createElement('button');
+            btn.className = `emoji-btn ${isFirstEmoji ? 'selected' : ''}`;
+            btn.innerText = emoji;
+            btn.type = "button";
+            
+            if(isFirstEmoji) { selectedEmoji = emoji; isFirstEmoji = false; }
+
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                selectedEmoji = emoji;
+            });
+            grid.appendChild(btn);
         });
-        pickerContainer.appendChild(btn);
+        
+        section.appendChild(grid);
+        themesContainer.appendChild(section);
     });
 
     window.toggleTeamAccordion = function() {
@@ -453,7 +490,6 @@
         participants.push(inputName);
         customEmojisMapping[inputName] = selectedEmoji;
 
-        // Sauvegarde globale de l'équipe
         setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true }).then(() => {
             currentUser = inputName;
             localStorage.setItem('jeudiCuistot_user', currentUser);
@@ -486,14 +522,12 @@
         document.getElementById('teamCount').innerText = participants.length;
     }
 
-    // ÉCOUTEUR GLOBAL 1 : Équipe unique
     onSnapshot(doc(db, "planning", "global_team"), (teamSnap) => {
         if (teamSnap.exists()) {
             const teamData = teamSnap.data();
             participants = teamData.names || [...defaultParticipants];
             customEmojisMapping = teamData.customEmojisMapping || {};
         } else {
-            // Création initiale si le document n'existe pas encore
             participants = [...defaultParticipants];
             customEmojisMapping = {};
             setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: {} });
@@ -507,7 +541,6 @@
         }
     });
 
-    // ÉCOUTEUR GLOBAL 2 : Changements de mois pour le planning
     function connectToMonth(monthId) {
         if (unsubscribeMonth) unsubscribeMonth();
         unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
@@ -533,7 +566,7 @@
             const currentEmoji = customEmojisMapping[name] || "🦊";
             const div = document.createElement('div');
             div.className = 'input-group';
-            let emojiOptionsHTML = availableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
+            let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
             
             div.innerHTML = `
                 <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}">${emojiOptionsHTML}</select>

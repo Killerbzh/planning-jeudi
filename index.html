@@ -197,6 +197,18 @@
         .rank-2 { background: #e2e2e2; color: #475569; }
         .rank-3 { background: #ffedd5; color: #9a3412; }
 
+        /* Galerie Photos */
+        .galerie-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; }
+        .galerie-card { background: white; border-radius: 20px; padding: 16px; box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; display: flex; flex-direction: column; gap: 12px; }
+        .galerie-title { font-weight: 800; font-size: 1.1rem; color: #0f172a; margin: 0; border-bottom: 1px solid #f1f5f9; padding-bottom: 8px; }
+        .galerie-photos-container { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+        .photo-wrapper { display: flex; flex-direction: column; gap: 4px; }
+        .photo-label { font-size: 0.7rem; font-weight: 800; color: var(--text-muted); text-transform: uppercase; }
+        .photo-img { width: 100%; height: 140px; object-fit: cover; border-radius: 12px; background: #f1f5f9; border: 1px solid #e2e8f0; }
+        .photo-empty { width: 100%; height: 140px; background: #f8fafc; border: 2px dashed #e2e8f0; border-radius: 12px; display: flex; align-items: center; justify-content: center; color: var(--text-muted); font-size: 0.8rem; font-weight: 600; text-align: center; padding: 10px; }
+        .btn-add-photo { background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; color: #475569; cursor: pointer; transition: background 0.2s; text-align: center; width: 100%; margin-top: 4px; }
+        .btn-add-photo:hover { background: #e2e8f0; }
+
         /* Responsive Mobile */
         @media (max-width: 768px) {
             body { flex-direction: column; background-color: #f1f5f9; }
@@ -209,18 +221,18 @@
             }
             .mobile-nav-btn {
                 background: transparent; border: none; color: #94a3b8; display: flex;
-                flex-direction: column; align-items: center; gap: 4px; font-size: 0.7rem;
-                font-weight: 700; width: 33%; cursor: pointer;
+                flex-direction: column; align-items: center; gap: 4px; font-size: 0.65rem;
+                font-weight: 700; width: 25%; cursor: pointer;
             }
             .mobile-nav-btn.active { color: #38bdf8; }
-            .mobile-nav-btn span:first-child { font-size: 1.3rem; }
+            .mobile-nav-btn span:first-child { font-size: 1.2rem; }
 
             .main-content { padding: 16px 16px 90px 16px; }
             h1 { font-size: 1.4rem; }
             .header-status { flex-direction: row; justify-content: space-between; align-items: center; margin-bottom: 16px; }
             .selector-wrapper { padding: 8px 12px; }
             
-            .cards-grid { grid-template-columns: 1fr; gap: 16px; }
+            .cards-grid, .galerie-grid { grid-template-columns: 1fr; gap: 16px; }
             .emoji-picker { grid-template-columns: repeat(6, 1fr); }
         }
 
@@ -235,10 +247,11 @@
         .sem-3 { background: var(--grad-3); } .sem-4 { background: var(--grad-4); }
         .sem-5 { background: var(--grad-5); }
     </style>
-    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
 
+    <!-- ÉCRAN D'ACCUEIL / PROFIL -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-card">
             <h2>✨ Jeudi Cuistot</h2>
@@ -266,6 +279,7 @@
         </div>
     </div>
 
+    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Paramètres</span></div>
         <div class="current-user-box">
@@ -276,18 +290,22 @@
             <button class="logout-btn" id="logoutBtn">Changer</button>
         </div>
         <button class="nav-btn active" id="btn-aperçu" onclick="switchPage('aperçu')">📅 <span>Planning</span></button>
+        <button class="nav-btn" id="btn-galerie" onclick="switchPage('galerie')">📸 <span>Galerie Photos</span></button>
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
     </div>
 
+    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
+        <button class="mobile-nav-btn" id="mbtn-galerie" onclick="switchPage('galerie')"><span>📸</span><span>Galerie</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout" onclick="triggerLogout()"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
+    <!-- ZONE PRINCIPALE -->
     <div class="main-content">
         <div class="header-status">
-            <h1> ✨Planning du mois✨ </h1>
+            <h1> ✨Le Repaire des Chefs✨ </h1>
             <div class="selector-wrapper">
                 <select id="monthSelect">
                     <option value="2026-06">Juin</option>
@@ -301,6 +319,7 @@
             </div>
         </div>
 
+        <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
             <div class="accordion-header" onclick="toggleTeamAccordion()">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
@@ -314,6 +333,14 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
+        <!-- ONGLET 2 : GALERIE -->
+        <div id="page-galerie" class="page-section">
+            <h2 style="font-weight:800; font-size:1.2rem; margin: 0 0 4px 0; color:#1e293b;">📸 Les Photos des Plats</h2>
+            <p style="color:var(--text-muted); margin-bottom:20px; margin-top:0; font-size:0.8rem;">Collez le lien d'une photo pour l'immortaliser.</p>
+            <div class="galerie-grid" id="galerieContainer"></div>
+        </div>
+
+        <!-- ONGLET 3 : STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.2rem; margin-bottom:4px;">🏆 Classement</h2>
@@ -468,12 +495,12 @@
         if(mobBtn) mobBtn.classList.add('active');
         
         if(pageId === 'stats') generateStats();
+        if(pageId === 'galerie') generateGalerie();
     }
 
     document.getElementById('monthSelect').addEventListener('change', (e) => {
         currentMonth = e.target.value;
         document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
-        document.getElementById('statsTitle').innerText = `🏆 Classement de ${monthNames[currentMonth]}`;
         connectToMonth(currentMonth);
     });
 
@@ -565,6 +592,7 @@
         if(currentUser) {
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+            if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
         }
     });
 
@@ -582,11 +610,11 @@
             if(currentUser) {
                 generatePlanningCards();
                 if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+                if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
             }
         });
     }
 
-    // Écoute initiale du mois
     connectToMonth(currentMonth);
 
     function initInputs() {
@@ -689,7 +717,22 @@
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
-    // Générateur des cartes du mois courant
+    // Gestion de l'ajout des photos (liens URL)
+    window.addPhotoLink = function(globalIndex, type) {
+        if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = {};
+        
+        const label = type === 'plat' ? "du plat principal" : "du dessert";
+        const currentUrl = thursdaysData[globalIndex][`photo_${type}`] || "";
+        
+        const newUrl = prompt(`Colle l'adresse/URL de la photo ${label} :`, currentUrl);
+        
+        if (newUrl !== null) {
+            thursdaysData[globalIndex][`photo_${type}`] = newUrl.trim();
+            setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
+        }
+    }
+
+    // Générateur du Planning
     function generatePlanningCards() {
         const container = document.getElementById('cardsContainer');
         container.innerHTML = "";
@@ -709,7 +752,6 @@
 
             const isPresent = presences.includes(currentUser);
 
-            // Calculs moyennes
             const pVotes = Object.values(ratingsPlat);
             const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";
             const dVotes = Object.values(ratingsDessert);
@@ -775,6 +817,56 @@
         });
     }
 
+    // Générateur de la Galerie Photo
+    function generateGalerie() {
+        const container = document.getElementById('galerieContainer');
+        container.innerHTML = "";
+
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
+
+        thursdays.forEach(thurs => {
+            const gIdx = thurs.globalIndex;
+            const roles = getRolesForGlobalIndex(gIdx);
+            const dayData = thursdaysData[gIdx] || {};
+            
+            const photoPlat = dayData.photo_plat || "";
+            const photoDessert = dayData.photo_dessert || "";
+
+            const card = document.createElement('div');
+            card.className = 'galerie-card';
+
+            const platImgHTML = photoPlat 
+                ? `<img class="photo-img" src="${photoPlat}" alt="Plat" onerror="this.src=''; this.className='photo-empty'; this.innerText='Lien mort ❌';">`
+                : `<div class="photo-empty">Pas encore de photo 🍳</div>`;
+
+            const dessertImgHTML = photoDessert 
+                ? `<img class="photo-img" src="${photoDessert}" alt="Dessert" onerror="this.src=''; this.className='photo-empty'; this.innerText='Lien mort ❌';">`
+                : `<div class="photo-empty">Pas encore de photo 🧁</div>`;
+
+            card.innerHTML = `
+                <h3 class="galerie-title">${thurs.dateText}</h3>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-top:-6px; margin-bottom: 4px;">
+                    🧑‍🍳 Chef Plat : ${roles.plat} | Desserts : ${roles.dessert}
+                </div>
+                <div class="galerie-photos-container">
+                    <div class="photo-wrapper">
+                        <span class="photo-label">🍕 Plat</span>
+                        ${platImgHTML}
+                        <button class="btn-add-photo" onclick="addPhotoLink(${gIdx}, 'plat')">📸 Gérer</button>
+                    </div>
+                    <div class="photo-wrapper">
+                        <span class="photo-label">🧁 Dessert</span>
+                        ${dessertImgHTML}
+                        <button class="btn-add-photo" onclick="addPhotoLink(${gIdx}, 'dessert')">📸 Gérer</button>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+    }
+
     // Système de statistiques et classement
     function generateStats() {
         const tbody = document.getElementById('statsTableBody');
@@ -782,7 +874,6 @@
 
         let userScores = {};
 
-        // Parcourir toutes les données téléchargées du mois en cours
         Object.keys(thursdaysData).forEach(gIdx => {
             const roles = getRolesForGlobalIndex(parseInt(gIdx));
             const dayData = thursdaysData[gIdx];
@@ -817,7 +908,6 @@
             }
         });
 
-        // Trier du plus grand au plus petit score moyenne
         leaderboard.sort((a,b) => b.avg - a.avg);
 
         if(leaderboard.length === 0) {

@@ -78,6 +78,7 @@
             background: #0284c7; color: white; border: none; padding: 14px; width: 100%;
             border-radius: 12px; font-weight: 700; font-size: 1rem; cursor: pointer;
         }
+        .primary-btn:disabled { background: #64748b; cursor: not-allowed; }
         .divider { margin: 20px 0; border-top: 1px solid #334155; position: relative; }
         .divider span { position: absolute; top: -10px; background: #1e293b; padding: 0 10px; color: #64748b; font-size: 0.75rem; font-weight: 700; left: 50%; transform: translateX(-50%); }
 
@@ -195,8 +196,8 @@
         .star.active { color: #facc15; }
         .avg-rating { font-size: 0.75rem; font-weight: 700; background: rgba(255,255,255,0.15); padding: 4px 8px; border-radius: 8px; text-align: right; line-height: 1.3; }
 
-        /* Classement */
-        .stats-container { background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); }
+        /* Classement & Roulette Containers */
+        .stats-container { background: white; border-radius: 20px; padding: 20px; box-shadow: var(--card-shadow); border: 1px solid #e2e8f0; }
         .stats-table { width: 100%; border-collapse: collapse; }
         .stats-table th { padding: 12px; color: var(--text-muted); font-size: 0.75rem; text-transform: uppercase; border-bottom: 2px solid #f1f5f9; text-align: left; }
         .stats-table td { padding: 12px; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem; }
@@ -217,6 +218,21 @@
         .btn-add-photo { background: #f1f5f9; border: none; padding: 8px 12px; border-radius: 10px; font-size: 0.75rem; font-weight: 700; color: #475569; cursor: pointer; transition: background 0.2s; text-align: center; width: 100%; margin-top: 4px; }
         .btn-add-photo:hover { background: #e2e8f0; }
 
+        /* Roulette spécifique */
+        .roulette-box {
+            display: inline-block;
+            background: #0f172a;
+            color: white;
+            padding: 15px 30px;
+            border-radius: 16px;
+            font-size: 1.8rem;
+            font-weight: 800;
+            margin: 20px 0;
+            min-width: 250px;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.5);
+            border: 2px solid #38bdf8;
+        }
+
         /* Responsive Mobile */
         @media (max-width: 768px) {
             body { flex-direction: column; background-color: #f1f5f9; }
@@ -230,7 +246,7 @@
             .mobile-nav-btn {
                 background: transparent; border: none; color: #94a3b8; display: flex;
                 flex-direction: column; align-items: center; gap: 4px; font-size: 0.65rem;
-                font-weight: 700; width: 25%; cursor: pointer;
+                font-weight: 700; width: 20%; cursor: pointer;
             }
             .mobile-nav-btn.active { color: #38bdf8; }
             .mobile-nav-btn span:first-child { font-size: 1.2rem; }
@@ -309,6 +325,7 @@
         <button class="nav-btn active" id="btn-aperçu" onclick="switchPage('aperçu')">📅 <span>Planning</span></button>
         <button class="nav-btn" id="btn-galerie" onclick="switchPage('galerie')">📸 <span>Galerie Photos</span></button>
         <button class="nav-btn" id="btn-stats" onclick="switchPage('stats')">🏆 <span>Classement</span></button>
+        <button class="nav-btn" id="btn-vaisselle" onclick="switchPage('vaisselle')">🧼 <span>Vaisselle</span></button>
     </div>
 
     <!-- BARRE NAV BASSE MOBILE -->
@@ -316,6 +333,7 @@
         <button class="mobile-nav-btn active" id="mbtn-aperçu" onclick="switchPage('aperçu')"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-galerie" onclick="switchPage('galerie')"><span>📸</span><span>Galerie</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats" onclick="switchPage('stats')"><span>🏆</span><span>Classement</span></button>
+        <button class="mobile-nav-btn" id="mbtn-vaisselle" onclick="switchPage('vaisselle')"><span>🧼</span><span>Vaisselle</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout" onclick="triggerLogout()"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
@@ -368,6 +386,24 @@
                     </thead>
                     <tbody id="statsTableBody"></tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- ONGLET 4 : VAISSELLE -->
+        <div id="page-vaisselle" class="page-section">
+            <div class="stats-container" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 30px 20px;">
+                <h2 style="margin-top:0; font-weight:800; font-size:1.2rem; margin-bottom:4px;">🧼 Qui fait la vaisselle ?</h2>
+                <p style="color:var(--text-muted); margin-bottom:20px; margin-top:0; font-size:0.8rem;">Sélectionnez une date pour charger les présents.</p>
+                
+                <div class="form-control" style="max-width: 280px; margin: 0 auto 20px auto;">
+                    <select id="vaisselleDateSelect" style="background:#f8fafc; color:#0f172a; border: 1px solid #cbd5e1;"></select>
+                </div>
+                
+                <div class="roulette-box" id="roueContainer">🎡 Roulette 🎡</div>
+                
+                <button class="primary-btn" onclick="lancerRoulette()" id="btn-roulette" style="max-width: 280px; margin: 10px auto 0 auto; display: block;">Tourner la roue !</button>
+                
+                <div id="resultatVaisselle" style="margin-top: 25px; font-weight: 800; color: #0284c7; font-size: 1.15rem; line-height: 1.5;"></div>
             </div>
         </div>
     </div>
@@ -514,6 +550,7 @@
         
         if(pageId === 'stats') generateStats();
         if(pageId === 'galerie') generateGalerie();
+        if(pageId === 'vaisselle') initVaissellePage();
     }
 
     document.getElementById('monthSelect').addEventListener('change', (e) => {
@@ -654,6 +691,7 @@
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) generateStats();
             if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
+            if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
         }
     });
 
@@ -672,6 +710,7 @@
                 generatePlanningCards();
                 if (document.getElementById('page-stats').classList.contains('active')) generateStats();
                 if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
+                if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
             }
         });
     }
@@ -997,6 +1036,74 @@
             `;
             tbody.appendChild(tr);
         });
+    }
+
+    // Remplissage du menu des dates pour la roulette
+    function initVaissellePage() {
+        const select = document.getElementById('vaisselleDateSelect');
+        const currentSelectedValue = select.value;
+        select.innerHTML = "";
+        
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
+        
+        thursdays.forEach(thurs => {
+            const opt = document.createElement('option');
+            opt.value = thurs.globalIndex;
+            opt.innerText = thurs.dateText;
+            select.appendChild(opt);
+        });
+
+        if(currentSelectedValue && Array.from(select.options).some(o => o.value === currentSelectedValue)) {
+            select.value = currentSelectedValue;
+        }
+    }
+
+    // Tirage au sort de la roulette vaisselle
+    window.lancerRoulette = function() {
+        const gIdx = document.getElementById('vaisselleDateSelect').value;
+        if (!gIdx) return;
+        
+        const dayData = thursdaysData[gIdx] || {};
+        const presents = dayData.presences || [];
+        
+        if (presents.length < 2) {
+            return alert("Il faut au moins 2 personnes présentes à cette date pour lancer le tirage !");
+        }
+
+        const roue = document.getElementById('roueContainer');
+        const btn = document.getElementById('btn-roulette');
+        const resultDiv = document.getElementById('resultatVaisselle');
+        
+        btn.disabled = true;
+        resultDiv.innerText = "";
+
+        // Effet de défilement rapide des prénoms
+        let i = 0;
+        const anim = setInterval(() => {
+            const randomUser = presents[i % presents.length];
+            roue.innerText = `${customEmojisMapping[randomUser] || "🦊"} ${randomUser}`;
+            i++;
+        }, 80);
+
+        // Arrêt au bout de 2 secondes
+        setTimeout(() => {
+            clearInterval(anim);
+            btn.disabled = false;
+            
+            // Mélange et sélection finale de deux personnes uniques
+            let shuffled = [...presents].sort(() => 0.5 - Math.random());
+            let selection = shuffled.slice(0, 2);
+            
+            const p1 = selection[0];
+            const p2 = selection[1];
+            const emo1 = customEmojisMapping[p1] || "🦊";
+            const emo2 = customEmojisMapping[p2] || "🦊";
+
+            roue.innerText = "✨ Trouvé ! ✨";
+            resultDiv.innerHTML = `🎉 Les deux commis désignés d'office :<br><strong>${emo1} ${p1}</strong> & <strong>${emo2} ${p2}</strong> 🧼`;
+        }, 2000);
     }
 </script>
 

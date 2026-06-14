@@ -613,7 +613,7 @@
     function checkUserSession() {
         const savedUser = localStorage.getItem('jeudiCuistot_user');
         if (savedUser && participants.includes(savedUser)) {
-            // Sécurité : si l'utilisateur enregistré est Lucas, on demande le mot de passe même au rechargement
+            // Sécurité stricte : si l'utilisateur enregistré est Lucas, on redemande le mot de passe même au rechargement
             if (savedUser.toLowerCase() === "lucas") {
                 const mdp = prompt("Entrez le mot de passe pour le profil Lucas :");
                 if (mdp !== "1972") {
@@ -734,28 +734,6 @@
         }
     });
 
-    function connectToMonth(monthId) {
-        if (unsubscribeMonth) unsubscribeMonth();
-        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
-            if (docSnap.exists()) {
-                const data = docSnap.data();
-                thursdaysData = data.thursdaysData || {};
-                overrides = data.overrides || {};
-            } else {
-                thursdaysData = {};
-                overrides = {};
-            }
-            if(currentUser) {
-                generatePlanningCards();
-                if (document.getElementById('page-stats').classList.contains('active')) generateStats();
-                if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
-                if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
-            }
-        });
-    }
-
-    connectToMonth(currentMonth);
-
     function initInputs() {
         const container = document.getElementById('inputsContainer');
         container.innerHTML = '';
@@ -763,7 +741,7 @@
             const currentEmoji = customEmojisMapping[name] || "🦊";
             const div = document.createElement('div');
             
-            // Vérification des droits d'édition : actif uniquement si le profil correspond au profil connecté
+            // Vérification des droits d'édition : actif uniquement si le profil correspond exactement au profil connecté
             const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
             
             div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''}`;
@@ -824,6 +802,28 @@
         });
     }
 
+    function connectToMonth(monthId) {
+        if (unsubscribeMonth) unsubscribeMonth();
+        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                thursdaysData = data.thursdaysData || {};
+                overrides = data.overrides || {};
+            } else {
+                thursdaysData = {};
+                overrides = {};
+            }
+            if(currentUser) {
+                generatePlanningCards();
+                if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+                if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
+                if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
+            }
+        });
+    }
+
+    connectToMonth(currentMonth);
+
     window.updateRoleManually = function(globalIndex, roleType, selectedValue) {
         if (!overrides[globalIndex]) overrides[globalIndex] = { ...getRolesForGlobalIndex(globalIndex) };
         overrides[globalIndex][roleType] = selectedValue;
@@ -862,7 +862,6 @@
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
-    // Gestion de l'ajout des photos (Uniquement par les chefs affectés)
     window.addPhotoLink = function(globalIndex, type) {
         const roles = getRolesForGlobalIndex(globalIndex);
         const chefConcerne = type === 'plat' ? roles.plat : roles.dessert;
@@ -884,7 +883,6 @@
         }
     }
 
-    // Générateur du Planning
     function generatePlanningCards() {
         const container = document.getElementById('cardsContainer');
         container.innerHTML = "";
@@ -969,7 +967,6 @@
         });
     }
 
-    // Genérateur de la Galerie Photo
     function generateGalerie() {
         const container = document.getElementById('galerieContainer');
         container.innerHTML = "";
@@ -1019,7 +1016,6 @@
         });
     }
 
-    // Système de statistiques et classement
     function generateStats() {
         const tbody = document.getElementById('statsTableBody');
         tbody.innerHTML = "";
@@ -1083,7 +1079,6 @@
         });
     }
 
-    // Remplissage du menu des dates pour la roulette
     function initVaissellePage() {
         const select = document.getElementById('vaisselleDateSelect');
         const currentSelectedValue = select.value;
@@ -1105,7 +1100,6 @@
         }
     }
 
-    // Tirage au sort de la roulette vaisselle
     window.lancerRoulette = function() {
         const gIdx = document.getElementById('vaisselleDateSelect').value;
         if (!gIdx) return;
@@ -1124,7 +1118,6 @@
         btn.disabled = true;
         resultDiv.innerText = "";
 
-        // Effet de défilement rapide des prénoms
         let i = 0;
         const anim = setInterval(() => {
             const randomUser = presents[i % presents.length];
@@ -1132,12 +1125,10 @@
             i++;
         }, 80);
 
-        // Arrêt au bout de 2 secondes
         setTimeout(() => {
             clearInterval(anim);
             btn.disabled = false;
             
-            // Mélange et sélection finale de deux personnes uniques
             let shuffled = [...presents].sort(() => 0.5 - Math.random());
             let selection = shuffled.slice(0, 2);
             

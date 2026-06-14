@@ -135,6 +135,10 @@
             padding: 10px 14px;
             box-shadow: var(--card-shadow);
         }
+        .input-group.disabled-chef-box {
+            background: #f1f5f9;
+            opacity: 0.65;
+        }
 
         .emoji-select-wrapper {
             position: relative;
@@ -146,6 +150,10 @@
             width: 28px;
             height: 28px;
             flex-shrink: 0;
+        }
+        .emoji-select-wrapper.disabled-emoji {
+            cursor: not-allowed;
+            pointer-events: none;
         }
 
         .edit-emoji-select { 
@@ -166,6 +174,10 @@
             outline: none; 
             padding: 0 0 0 6px;
             color: var(--text-main);
+        }
+        .input-group input:disabled {
+            cursor: not-allowed;
+            color: var(--text-muted);
         }
 
         /* Grille des cartes de planning */
@@ -601,10 +613,21 @@
     function checkUserSession() {
         const savedUser = localStorage.getItem('jeudiCuistot_user');
         if (savedUser && participants.includes(savedUser)) {
+            // Sécurité : si l'utilisateur enregistré est Lucas, on demande le mot de passe même au rechargement
+            if (savedUser.toLowerCase() === "lucas") {
+                const mdp = prompt("Entrez le mot de passe pour le profil Lucas :");
+                if (mdp !== "1972") {
+                    alert("Mot de passe incorrect.");
+                    localStorage.removeItem('jeudiCuistot_user');
+                    document.getElementById('welcomeScreen').style.display = 'flex';
+                    return;
+                }
+            }
             currentUser = savedUser;
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            initInputs(); // Force la mise à jour des droits édit/verrouillage de la team
             listenToUserSession(currentUser);
         } else {
             document.getElementById('welcomeScreen').style.display = 'flex';
@@ -621,11 +644,18 @@
     document.getElementById('loginBtn').addEventListener('click', () => {
         const selected = document.getElementById('existingProfileSelect').value;
         if(selected) {
+            if (selected.toLowerCase() === "lucas") {
+                const mdp = prompt("Entrez le mot de passe pour le profil Lucas :");
+                if (mdp !== "1972") {
+                    return alert("Mot de passe incorrect.");
+                }
+            }
             currentUser = selected;
             localStorage.setItem('jeudiCuistot_user', currentUser);
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            initInputs(); // Force la mise à jour des inputs verrouillés
             listenToUserSession(currentUser);
         }
     });
@@ -634,6 +664,14 @@
         const inputName = document.getElementById('newProfileName').value.trim();
         if (inputName === "") return alert("Prénom invalide.");
         if (participants.some(p => p.toLowerCase() === inputName.toLowerCase())) return alert("Prénom déjà pris.");
+        
+        // Bloque la création pirate d'un compte Lucas sans mot de passe
+        if (inputName.toLowerCase() === "lucas") {
+            const mdp = prompt("Création du profil Lucas détectée. Entrez le mot de passe :");
+            if (mdp !== "1972") {
+                return alert("Mot de passe incorrect. Création annulée.");
+            }
+        }
 
         participants.push(inputName);
         customEmojisMapping[inputName] = selectedEmoji;
@@ -645,6 +683,7 @@
             document.getElementById('welcomeScreen').style.display = 'none';
             updateSidebarUserInfo();
             generatePlanningCards();
+            initInputs();
             listenToUserSession(currentUser);
         });
     });
@@ -723,59 +762,65 @@
         participants.forEach((name, index) => {
             const currentEmoji = customEmojisMapping[name] || "🦊";
             const div = document.createElement('div');
-            div.className = 'input-group';
+            
+            // Vérification des droits d'édition : actif uniquement si le profil correspond au profil connecté
+            const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
+            
+            div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''}`;
             let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
             
             div.innerHTML = `
-                <div class="emoji-select-wrapper">
+                <div class="emoji-select-wrapper ${!canEdit ? 'disabled-emoji' : ''}">
                     <span id="visual-emoji-${index}">${currentEmoji}</span>
-                    <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}">${emojiOptionsHTML}</select>
+                    <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}" ${!canEdit ? 'disabled' : ''}>${emojiOptionsHTML}</select>
                 </div>
-                <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}">
+                <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}" ${!canEdit ? 'disabled' : ''}>
             `;
             container.appendChild(div);
             
-            const selectEl = document.getElementById(`emoji-select-${index}`);
-            const inputEl = document.getElementById(`input-chef-${index}`);
+            if (canEdit) {
+                const selectEl = document.getElementById(`emoji-select-${index}`);
+                const inputEl = document.getElementById(`input-chef-${index}`);
 
-            selectEl.addEventListener('change', (e) => {
-                const selected = e.target.value;
-                const idx = e.target.dataset.index;
-                const pName = participants[idx];
-                customEmojisMapping[pName] = selected;
-                document.getElementById(`visual-emoji-${idx}`).innerText = selected;
-                if(currentUser === pName) updateSidebarUserInfo();
-                setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
-            });
+                selectEl.addEventListener('change', (e) => {
+                    const selected = e.target.value;
+                    const idx = e.target.dataset.index;
+                    const pName = participants[idx];
+                    customEmojisMapping[pName] = selected;
+                    document.getElementById(`visual-emoji-${idx}`).innerText = selected;
+                    if(currentUser === pName) updateSidebarUserInfo();
+                    setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
+                });
 
-            inputEl.addEventListener('focus', () => { isEditingTeam = true; });
+                inputEl.addEventListener('focus', () => { isEditingTeam = true; });
 
-            inputEl.addEventListener('blur', (e) => {
-                const idx = e.target.dataset.index; 
-                const oldName = participants[idx]; 
-                const newName = e.target.value.trim();
-                
-                isEditingTeam = false;
+                inputEl.addEventListener('blur', (e) => {
+                    const idx = e.target.dataset.index; 
+                    const oldName = participants[idx]; 
+                    const newName = e.target.value.trim();
+                    
+                    isEditingTeam = false;
 
-                if(oldName === newName || !newName) return;
-                if(participants.some((p, pIdx) => p.toLowerCase() === newName.toLowerCase() && pIdx != idx)) { 
-                    e.target.value = oldName; 
-                    return alert("Nom existant."); 
-                }
+                    if(oldName === newName || !newName) return;
+                    if(participants.some((p, pIdx) => p.toLowerCase() === newName.toLowerCase() && pIdx != idx)) { 
+                        e.target.value = oldName; 
+                        return alert("Nom existant."); 
+                    }
 
-                participants[idx] = newName;
-                if(customEmojisMapping[oldName]) { 
-                    customEmojisMapping[newName] = customEmojisMapping[oldName]; 
-                    delete customEmojisMapping[oldName]; 
-                }
-                if(currentUser === oldName) { 
-                    currentUser = newName; 
-                    localStorage.setItem('jeudiCuistot_user', currentUser); 
-                    updateSidebarUserInfo(); 
-                }
+                    participants[idx] = newName;
+                    if(customEmojisMapping[oldName]) { 
+                        customEmojisMapping[newName] = customEmojisMapping[oldName]; 
+                        delete customEmojisMapping[oldName]; 
+                    }
+                    if(currentUser === oldName) { 
+                        currentUser = newName; 
+                        localStorage.setItem('jeudiCuistot_user', currentUser); 
+                        updateSidebarUserInfo(); 
+                    }
 
-                setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
-            });
+                    setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
+                });
+            }
         });
     }
 
@@ -924,7 +969,7 @@
         });
     }
 
-    // Générateur de la Galerie Photo
+    // Genérateur de la Galerie Photo
     function generateGalerie() {
         const container = document.getElementById('galerieContainer');
         container.innerHTML = "";

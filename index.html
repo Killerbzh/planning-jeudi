@@ -286,6 +286,7 @@
             /* Tableau des classements scrollable sans casser le design */
             .stats-container { padding: 20px 14px; border-radius: 20px; overflow-x: auto; }
             .stats-table th, .stats-table td { padding: 10px 8px; font-size: 0.88rem; }
+            #statsTwoCol { grid-template-columns: 1fr !important; gap: 28px !important; }
         }
 
         @media (min-width: 769px) {
@@ -406,12 +407,22 @@
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.25rem; margin-bottom:4px;">🏆 Classement</h2>
                 <p style="color:var(--text-muted); margin-bottom:24px; margin-top:0; font-size:0.85rem;">Basé sur la moyenne de satisfaction générale.</p>
-                <table class="stats-table">
-                    <thead>
-                        <tr><th style="width: 60px;">Rang</th><th>Nom</th><th>Score</th><th>Plats</th></tr>
-                    </thead>
-                    <tbody id="statsTableBody"></tbody>
-                </table>
+                <div id="statsTwoCol" style="display:grid; grid-template-columns:1fr 1fr; gap:20px;">
+                    <div>
+                        <div style="font-size:0.8rem; font-weight:800; text-transform:uppercase; color:#38bdf8; letter-spacing:0.5px; margin-bottom:12px;">🍳 Plat Principal</div>
+                        <table class="stats-table">
+                            <thead><tr><th style="width:44px;">Rang</th><th>Nom</th><th>Score</th><th>Fois</th></tr></thead>
+                            <tbody id="statsTablePlat"></tbody>
+                        </table>
+                    </div>
+                    <div>
+                        <div style="font-size:0.8rem; font-weight:800; text-transform:uppercase; color:#fb923c; letter-spacing:0.5px; margin-bottom:12px;">🧁 Dessert</div>
+                        <table class="stats-table">
+                            <thead><tr><th style="width:44px;">Rang</th><th>Nom</th><th>Score</th><th>Fois</th></tr></thead>
+                            <tbody id="statsTableDessert"></tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -535,7 +546,8 @@
                 if (date.getMonth() === monthIndex) {
                     thursdaysInRequestedMonth.push({
                         dateText: `Jeudi ${date.getDate()} ${monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`]}`,
-                        globalIndex: thursdaysCount
+                        globalIndex: thursdaysCount,
+                        dayOfMonth: date.getDate()
                     });
                 }
                 thursdaysCount++;
@@ -543,6 +555,15 @@
             date.setDate(date.getDate() + 1);
         }
         return thursdaysInRequestedMonth;
+    }
+
+    // ─── Détermine si un jeudi est dans le passé (strictement avant aujourd'hui) ───
+    function isPastThursday(year, monthIndex, dayOfMonth) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const thursdayDate = new Date(year, monthIndex, dayOfMonth);
+        thursdayDate.setHours(0, 0, 0, 0);
+        return thursdayDate < today;
     }
 
     // ─── Charge les overrides manuels depuis Firestore (tous les mois) ───
@@ -900,7 +921,7 @@
                     setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
                 });
 
-                absentBtn.addEventListener('click', () => {
+                absentBtn.addEventListener('click', async () => {
                     const pName = participants[index];
                     const wasAbsent = !!absentGlobaux[pName];
                     if (wasAbsent) {
@@ -908,10 +929,44 @@
                     } else {
                         absentGlobaux[pName] = true;
                     }
-                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true }).then(() => {
-                        rebuildRolesCache();
-                        generatePlanningCards();
+
+                    // Avant de recalculer, on gèle tous les jours passés comme overrides
+                    // pour que les rôles historiques ne changent pas
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    const allMonths = ["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+                    const monthOverridesUpdates = {}; // { monthId: { overrides: {...} } }
+
+                    for (const m of allMonths) {
+                        const [y, mo] = m.split("-");
+                        const mIdx = parseInt(mo) - 1;
+                        const thursInM = getThursdaysInMonthWithGlobalIndex(parseInt(y), mIdx);
+                        for (const t of thursInM) {
+                            if (!isPastThursday(parseInt(y), mIdx, t.dayOfMonth)) continue;
+                            const gIdx = t.globalIndex;
+                            // Si pas déjà un override, on fige le rôle calculé actuel
+                            if (!allMonthsOverrides[gIdx]) {
+                                const current = rolesCache[gIdx] || getRolesForGlobalIndex(gIdx);
+                                if (current && current.plat && current.dessert && current.remp) {
+                                    allMonthsOverrides[gIdx] = { plat: current.plat, dessert: current.dessert, remp: current.remp };
+                                    if (!monthOverridesUpdates[m]) monthOverridesUpdates[m] = {};
+                                    monthOverridesUpdates[m][gIdx] = allMonthsOverrides[gIdx];
+                                    // Aussi mettre à jour overrides local si c'est le mois courant
+                                    if (m === currentMonth) overrides[gIdx] = allMonthsOverrides[gIdx];
+                                }
+                            }
+                        }
+                    }
+
+                    // Persister les overrides gelés dans Firestore pour chaque mois concerné
+                    const savePromises = Object.entries(monthOverridesUpdates).map(([m, newOvs]) => {
+                        return setDoc(doc(db, "planning", `mois_${m}`), { overrides: newOvs }, { merge: true });
                     });
+                    await Promise.all(savePromises);
+
+                    await setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
+                    rebuildRolesCache();
+                    generatePlanningCards();
                 });
 
                 inputEl.addEventListener('focus', () => { isEditingTeam = true; });
@@ -1069,6 +1124,11 @@
 
             const isPresent = presences.includes(currentUser);
 
+            // Déterminer si ce jeudi est passé
+            const isPast = isPastThursday(parseInt(year), monthIndex, thurs.dayOfMonth);
+            // Seul Lucas peut modifier les rôles des jours passés
+            const canEditRoles = !isPast || (currentUser && currentUser.toLowerCase() === "lucas");
+
             const pVotes = Object.values(ratingsPlat);
             const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";
             const dVotes = Object.values(ratingsDessert);
@@ -1090,26 +1150,31 @@
             let presencesListHTML = presences.map(p => `${customEmojisMapping[p]||"🦊"} ${p}`).join(', ');
             const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";
 
+            const pastBadge = isPast ? `<span style="font-size:0.65rem;font-weight:800;background:rgba(148,163,184,0.15);color:#94a3b8;padding:2px 8px;border-radius:20px;margin-left:8px;letter-spacing:0.5px;">PASSÉ</span>` : '';
+            const roleSelectDisabledAttr = canEditRoles ? '' : 'disabled';
+            const roleSelectDisabledStyle = canEditRoles ? '' : 'style="opacity:0.5;cursor:not-allowed;"';
+            const presenceBtnDisabled = isPast ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
+
             card.innerHTML = `
-                <div class="card-header"><span>${thurs.dateText}</span></div>
+                <div class="card-header"><span>${thurs.dateText}${pastBadge}</span></div>
                 
                 <div class="role-box">
                     <span class="role-label">🧑‍🍳 Plat Principal${platAbsent}</span>
-                    <select class="role-select-custom" data-role="plat">${selectPlat}</select>
+                    <select class="role-select-custom" data-role="plat" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectPlat}</select>
                 </div>
                 <div class="role-box">
                     <span class="role-label">🧁 Dessert${dessertAbsent}</span>
-                    <select class="role-select-custom" data-role="dessert">${selectDessert}</select>
+                    <select class="role-select-custom" data-role="dessert" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectDessert}</select>
                 </div>
                 <div class="role-box">
                     <span class="role-label">🛟 Remplaçant${rempAbsent}</span>
-                    <select class="role-select-custom" data-role="remp">${selectRemp}</select>
+                    <select class="role-select-custom" data-role="remp" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectRemp}</select>
                 </div>
 
                 <div class="presence-zone">
                     <div class="presence-header">
                         <span>Inscrits : ${presences.length}</span>
-                        <button class="presence-btn ${isPresent?'active':''}">
+                        <button class="presence-btn ${isPresent?'active':''}" ${presenceBtnDisabled}>
                             ${isPresent ? '✅ Présent' : '❌ Absent'}
                         </button>
                     </div>
@@ -1225,66 +1290,70 @@
     }
 
     function generateStats() {
-        const tbody = document.getElementById('statsTableBody');
-        tbody.innerHTML = "";
+        const tbodyPlat    = document.getElementById('statsTablePlat');
+        const tbodyDessert = document.getElementById('statsTableDessert');
+        tbodyPlat.innerHTML = "";
+        tbodyDessert.innerHTML = "";
 
-        let userScores = {};
+        // Collecter les scores séparément pour plat et dessert
+        const platScores    = {}; // { name: { totalScore, count } }
+        const dessertScores = {};
 
         Object.keys(thursdaysData).forEach(gIdx => {
-            const roles = getRolesForGlobalIndex(parseInt(gIdx));
+            const roles   = getRolesForGlobalIndex(parseInt(gIdx));
             const dayData = thursdaysData[gIdx];
 
-            if(dayData.ratingsPlat && roles.plat !== "Aucun") {
+            if (dayData.ratingsPlat && roles.plat && roles.plat !== "Aucun") {
                 const votes = Object.values(dayData.ratingsPlat);
-                if(votes.length) {
-                    if(!userScores[roles.plat]) userScores[roles.plat] = { totalScore: 0, count: 0, mealsCount: 0 };
-                    userScores[roles.plat].totalScore += (votes.reduce((a,b)=>a+b,0) / votes.length);
-                    userScores[roles.plat].count++;
-                    userScores[roles.plat].mealsCount++;
+                if (votes.length) {
+                    if (!platScores[roles.plat]) platScores[roles.plat] = { totalScore: 0, count: 0 };
+                    platScores[roles.plat].totalScore += votes.reduce((a,b) => a+b, 0) / votes.length;
+                    platScores[roles.plat].count++;
                 }
             }
-            if(dayData.ratingsDessert && roles.dessert !== "Aucun") {
+
+            if (dayData.ratingsDessert && roles.dessert && roles.dessert !== "Aucun") {
                 const votes = Object.values(dayData.ratingsDessert);
-                if(votes.length) {
-                    if(!userScores[roles.dessert]) userScores[roles.dessert] = { totalScore: 0, count: 0, mealsCount: 0 };
-                    userScores[roles.dessert].totalScore += (votes.reduce((a,b)=>a+b,0) / votes.length);
-                    userScores[roles.dessert].count++;
+                if (votes.length) {
+                    if (!dessertScores[roles.dessert]) dessertScores[roles.dessert] = { totalScore: 0, count: 0 };
+                    dessertScores[roles.dessert].totalScore += votes.reduce((a,b) => a+b, 0) / votes.length;
+                    dessertScores[roles.dessert].count++;
                 }
             }
         });
 
-        let leaderboard = [];
-        participants.forEach(p => {
-            if(userScores[p] && userScores[p].count > 0) {
-                leaderboard.push({
+        function buildLeaderboard(scores) {
+            return participants
+                .filter(p => scores[p] && scores[p].count > 0)
+                .map(p => ({
                     name: p,
-                    avg: (userScores[p].totalScore / userScores[p].count).toFixed(2),
-                    meals: userScores[p].mealsCount || 0
-                });
-            }
-        });
-
-        leaderboard.sort((a,b) => b.avg - a.avg);
-
-        if(leaderboard.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); padding:20px;">Aucune note enregistrée ce mois-ci 🍽️</td></tr>`;
-            return;
+                    avg:  (scores[p].totalScore / scores[p].count).toFixed(2),
+                    count: scores[p].count
+                }))
+                .sort((a, b) => b.avg - a.avg);
         }
 
-        leaderboard.forEach((chef, index) => {
-            const rank = index + 1;
-            let rankClass = `badge-rank rank-${rank}`;
-            if(rank > 3) rankClass = `badge-rank`;
+        function fillTable(tbody, leaderboard, emptyMsg) {
+            if (leaderboard.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;font-size:0.85rem;">${emptyMsg}</td></tr>`;
+                return;
+            }
+            leaderboard.forEach((chef, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `badge-rank rank-${rank}` : `badge-rank`;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="${rankClass}">${rank}</span></td>
+                    <td style="font-weight:700;">${customEmojisMapping[chef.name]||"🦊"} ${chef.name}</td>
+                    <td style="font-weight:800; color:#38bdf8;">⭐ ${chef.avg}</td>
+                    <td style="color:var(--text-muted); font-size:0.82rem;">${chef.count}x</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
-            const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td><span class="${rankClass}">${rank}</span></td>
-                <td style="font-weight:700;">${customEmojisMapping[chef.name]||"🦊"} ${chef.name}</td>
-                <td style="font-weight:800; color:#38bdf8;">⭐ ${chef.avg}</td>
-                <td style="color:var(--text-muted); font-size:0.85rem;">${chef.meals} cuisiné(s)</td>
-            `;
-            tbody.appendChild(tr);
-        });
+        fillTable(tbodyPlat,    buildLeaderboard(platScores),    "Aucune note plat 🍳");
+        fillTable(tbodyDessert, buildLeaderboard(dessertScores), "Aucune note dessert 🧁");
     }
 
     function initVaissellePage() {

@@ -157,6 +157,17 @@
         .input-group input { border: none; background: transparent; width: 100%; font-size: 0.95rem; font-weight: 700; outline: none; padding: 0 0 0 8px; color: var(--text-main); }
         .input-group input:disabled { cursor: not-allowed; color: var(--text-muted); }
 
+        /* Bouton absent permanent */
+        .absent-toggle {
+            background: transparent; border: none; cursor: pointer;
+            font-size: 1rem; padding: 0 4px; flex-shrink: 0;
+            opacity: 0.35; transition: all 0.2s ease; line-height: 1;
+        }
+        .absent-toggle.absent-on { opacity: 1; filter: drop-shadow(0 0 4px rgba(244,63,94,0.6)); }
+        .absent-toggle:disabled { cursor: not-allowed; }
+        .input-group.is-absent-global { background: rgba(244,63,94,0.05); border-color: rgba(244,63,94,0.25); }
+        .input-group.is-absent-global input { color: #f43f5e; text-decoration: line-through; opacity: 0.6; }
+
         /* Grille & Cartes de planning */
         .page-section { display: none; }
         .page-section.active { display: block; }
@@ -425,7 +436,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
@@ -458,6 +469,9 @@
     
     let thursdaysData = {};
     let overrides = {}; 
+    let absentGlobaux = {};
+    let allMonthsOverrides = {}; // overrides manuels de tous les mois
+    let rolesCache = {};         // planning complet calculé séquentiellement
     let currentMonth = "2026-06";
     let currentUser = "";
     let unsubscribeMonth = null;
@@ -531,27 +545,106 @@
         return thursdaysInRequestedMonth;
     }
 
-    function getRolesForGlobalIndex(globalIndex) {
-        if (overrides && overrides[globalIndex]) {
-            return {
-                plat: overrides[globalIndex].plat || "Aucun",
-                dessert: overrides[globalIndex].dessert || "Aucun",
-                remp: overrides[globalIndex].remp || "Aucun"
-            };
+    // ─── Charge les overrides manuels depuis Firestore (tous les mois) ───
+    async function loadAllMonthsOverrides() {
+        const allMonths = ["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+        allMonthsOverrides = {};
+        for (const m of allMonths) {
+            try {
+                const snap = await getDoc(doc(db, "planning", `mois_${m}`));
+                if (snap.exists()) {
+                    const raw = snap.data().overrides || {};
+                    // Nettoyer les overrides partiels (anciens bugs) : on ne garde
+                    // que ceux qui ont les 3 champs renseignés
+                    Object.entries(raw).forEach(([idx, val]) => {
+                        if (val && val.plat && val.dessert && val.remp) {
+                            allMonthsOverrides[idx] = val;
+                        }
+                    });
+                }
+            } catch(e) { /* mois pas encore créé */ }
         }
-        const baseOrder = ["Jeanne", "Laura", "Claribel", "Yoann", "Lucas", "Mireille", "Candice", "Killian", "Annaig", "Ewen", "Anthony", "Clement", "Clémentine", "Benoit"];
-        const order = baseOrder.filter(n => participants.includes(n));
-        participants.forEach(p => { if (!order.includes(p)) order.push(p); });
+        // Le mois courant en mémoire est toujours plus frais
+        Object.entries(overrides).forEach(([idx, val]) => {
+            if (val && val.plat && val.dessert && val.remp) {
+                allMonthsOverrides[idx] = val;
+            }
+        });
+        rebuildRolesCache();
+    }
 
-        const len = order.length;
-        if(len === 0) return { plat: "Invité(e)", dessert: "Invité(e)", remp: "Invité(e)" };
+    // ─── Reconstruit le planning COMPLET de façon séquentielle ───
+    // Principe : on calcule chaque jeudi dans l'ordre depuis le début de l'année.
+    // Chaque jour s'appuie sur le vrai résultat des jours précédents (pas un modulo).
+    // Les overrides manuels sont injectés tels quels et comptent dans l'historique.
+    function rebuildRolesCache() {
+        rolesCache = {};
 
-        const platIdx = globalIndex % len;
-        const dessertIdx = (globalIndex + Math.floor(len / 2)) % len; 
-        let rempIdx = (globalIndex + 1) % len;
-        if (rempIdx === platIdx || rempIdx === dessertIdx) rempIdx = (rempIdx + 1) % len;
+        const activeParticipants = participants.filter(p => !absentGlobaux[p]);
+        if (activeParticipants.length === 0) return;
 
-        return { plat: order[platIdx], dessert: order[dessertIdx], remp: order[rempIdx] };
+        const baseOrder = ["Jeanne","Laura","Claribel","Yoann","Lucas","Mireille","Candice","Killian","Annaig","Ewen","Anthony","Clement","Clémentine","Benoit"];
+        const orderedActive = baseOrder.filter(n => activeParticipants.includes(n));
+        activeParticipants.forEach(p => { if (!orderedActive.includes(p)) orderedActive.push(p); });
+
+        const totalThursdays = getTotalThursdaysInYear(2026);
+        const counts = {};
+        orderedActive.forEach(p => { counts[p] = { plat: 0, dessert: 0, remp: 0, total: 0 }; });
+
+        for (let i = 0; i < totalThursdays; i++) {
+            let result;
+
+            if (allMonthsOverrides[i]) {
+                result = {
+                    plat:    allMonthsOverrides[i].plat    || "Aucun",
+                    dessert: allMonthsOverrides[i].dessert || "Aucun",
+                    remp:    allMonthsOverrides[i].remp    || "Aucun"
+                };
+            } else {
+                function pickLeast(roleKey, exclude) {
+                    const available = orderedActive.filter(p => !exclude.includes(p));
+                    available.sort((a, b) => {
+                        const dr = counts[a][roleKey] - counts[b][roleKey];
+                        if (dr !== 0) return dr;
+                        const dt = counts[a].total - counts[b].total;
+                        if (dt !== 0) return dt;
+                        return orderedActive.indexOf(a) - orderedActive.indexOf(b);
+                    });
+                    return available[0] || "Aucun";
+                }
+                const plat    = pickLeast('plat',    []);
+                const dessert = pickLeast('dessert', [plat]);
+                const remp    = pickLeast('remp',    [plat, dessert]);
+                result = { plat, dessert, remp };
+            }
+
+            rolesCache[i] = result;
+
+            if (counts[result.plat])    { counts[result.plat].plat++;    counts[result.plat].total++;    }
+            if (counts[result.dessert]) { counts[result.dessert].dessert++; counts[result.dessert].total++; }
+            if (counts[result.remp])    { counts[result.remp].remp++;    counts[result.remp].total++;    }
+        }
+    }
+
+    function getTotalThursdaysInYear(year) {
+        let count = 0;
+        const d = new Date(year, 0, 1);
+        while (d.getFullYear() === year) {
+            if (d.getDay() === 4) count++;
+            d.setDate(d.getDate() + 1);
+        }
+        return count;
+    }
+
+    function getRolesForGlobalIndex(globalIndex) {
+        if (rolesCache[globalIndex]) return rolesCache[globalIndex];
+        // Fallback si cache pas encore prêt (rare)
+        const active = participants.filter(p => !absentGlobaux[p]);
+        return {
+            plat:    active[0] || "Aucun",
+            dessert: active[1] || active[0] || "Aucun",
+            remp:    active[2] || active[0] || "Aucun"
+        };
     }
 
     // Gestion du routage interne
@@ -751,6 +844,7 @@
             const teamData = teamSnap.data();
             participants = teamData.names || [...defaultParticipants];
             customEmojisMapping = teamData.customEmojisMapping || {};
+            absentGlobaux = teamData.absentGlobaux || {};
         }
         
         fillExistingProfilesDropdown();
@@ -773,11 +867,12 @@
         container.innerHTML = '';
         participants.forEach((name, index) => {
             const currentEmoji = customEmojisMapping[name] || "🦊";
+            const isAbsent = !!absentGlobaux[name];
             const div = document.createElement('div');
             
             const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
             
-            div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''}`;
+            div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''} ${isAbsent ? 'is-absent-global' : ''}`;
             let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
             
             div.innerHTML = `
@@ -786,12 +881,14 @@
                     <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}" ${!canEdit ? 'disabled' : ''}>${emojiOptionsHTML}</select>
                 </div>
                 <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}" ${!canEdit ? 'disabled' : ''}>
+                <button class="absent-toggle ${isAbsent ? 'absent-on' : ''}" title="${isAbsent ? 'Marqé absent — cliquer pour réactiver' : 'Marquer absent permanent'}" id="absent-btn-${index}" ${!canEdit ? 'disabled' : ''}>🚫</button>
             `;
             container.appendChild(div);
             
             if (canEdit) {
                 const selectEl = document.getElementById(`emoji-select-${index}`);
                 const inputEl = document.getElementById(`input-chef-${index}`);
+                const absentBtn = document.getElementById(`absent-btn-${index}`);
 
                 selectEl.addEventListener('change', (e) => {
                     const selected = e.target.value;
@@ -801,6 +898,20 @@
                     document.getElementById(`visual-emoji-${idx}`).innerText = selected;
                     if(currentUser === pName) updateSidebarUserInfo();
                     setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
+                });
+
+                absentBtn.addEventListener('click', () => {
+                    const pName = participants[index];
+                    const wasAbsent = !!absentGlobaux[pName];
+                    if (wasAbsent) {
+                        delete absentGlobaux[pName];
+                    } else {
+                        absentGlobaux[pName] = true;
+                    }
+                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true }).then(() => {
+                        rebuildRolesCache();
+                        generatePlanningCards();
+                    });
                 });
 
                 inputEl.addEventListener('focus', () => { isEditingTeam = true; });
@@ -823,13 +934,17 @@
                         customEmojisMapping[newName] = customEmojisMapping[oldName]; 
                         delete customEmojisMapping[oldName]; 
                     }
+                    if(absentGlobaux[oldName]) {
+                        absentGlobaux[newName] = true;
+                        delete absentGlobaux[oldName];
+                    }
                     if(currentUser === oldName) { 
                         currentUser = newName; 
                         localStorage.setItem('jeudiCuistot_user', currentUser); 
                         updateSidebarUserInfo(); 
                     }
 
-                    setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true });
+                    setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping, absentGlobaux: absentGlobaux }, { merge: true });
                 });
             }
         });
@@ -837,7 +952,7 @@
 
     function connectToMonth(monthId) {
         if (unsubscribeMonth) unsubscribeMonth();
-        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), (docSnap) => {
+        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), async (docSnap) => {
             if (docSnap.exists()) {
                 const data = docSnap.data();
                 thursdaysData = data.thursdaysData || {};
@@ -846,6 +961,8 @@
                 thursdaysData = {};
                 overrides = {};
             }
+            // Recharge l'historique complet pour que le calcul équitable soit exact
+            await loadAllMonthsOverrides();
             if(currentUser) {
                 generatePlanningCards();
                 if (document.getElementById('page-stats').classList.contains('active')) generateStats();
@@ -858,8 +975,25 @@
     connectToMonth(currentMonth);
 
     function updateRoleManually(globalIndex, roleType, selectedValue) {
-        if (!overrides[globalIndex]) overrides[globalIndex] = { ...getRolesForGlobalIndex(globalIndex) };
-        overrides[globalIndex][roleType] = selectedValue;
+        // Lire le résultat actuel du cache (avant modification) pour avoir les 3 rôles
+        const current = rolesCache[globalIndex] || getRolesForGlobalIndex(globalIndex);
+
+        // Construire un override complet avec les 3 champs
+        const fullOverride = {
+            plat:    current.plat    || "Aucun",
+            dessert: current.dessert || "Aucun",
+            remp:    current.remp    || "Aucun"
+        };
+        fullOverride[roleType] = selectedValue;
+
+        // Sauvegarder dans les deux caches
+        overrides[globalIndex] = fullOverride;
+        allMonthsOverrides[globalIndex] = fullOverride;
+
+        // Reconstruire tout le planning séquentiellement
+        rebuildRolesCache();
+
+        // Persister dans Firestore
         setDoc(doc(db, "planning", `mois_${currentMonth}`), { overrides: overrides }, { merge: true });
     }
 
@@ -944,9 +1078,14 @@
             card.className = `semaine-card sem-${(idx % 5) + 1}`;
             card.style.animationDelay = `${idx * 0.05}s`;
 
-            let selectPlat = participants.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${p}</option>`).join('');
-            let selectDessert = participants.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${p}</option>`).join('');
-            let selectRemp = participants.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${p}</option>`).join('');
+            const activeForSelect = participants.filter(p => !absentGlobaux[p]);
+            let selectPlat    = activeForSelect.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectDessert = activeForSelect.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectRemp    = activeForSelect.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+
+            const platAbsent    = absentGlobaux[roles.plat]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const dessertAbsent = absentGlobaux[roles.dessert] ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const rempAbsent    = absentGlobaux[roles.remp]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
 
             let presencesListHTML = presences.map(p => `${customEmojisMapping[p]||"🦊"} ${p}`).join(', ');
             const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";
@@ -955,15 +1094,15 @@
                 <div class="card-header"><span>${thurs.dateText}</span></div>
                 
                 <div class="role-box">
-                    <span class="role-label">🧑‍🍳 Plat Principal</span>
+                    <span class="role-label">🧑‍🍳 Plat Principal${platAbsent}</span>
                     <select class="role-select-custom" data-role="plat">${selectPlat}</select>
                 </div>
                 <div class="role-box">
-                    <span class="role-label">🧁 Dessert</span>
+                    <span class="role-label">🧁 Dessert${dessertAbsent}</span>
                     <select class="role-select-custom" data-role="dessert">${selectDessert}</select>
                 </div>
                 <div class="role-box">
-                    <span class="role-label">🛟 Remplaçant</span>
+                    <span class="role-label">🛟 Remplaçant${rempAbsent}</span>
                     <select class="role-select-custom" data-role="remp">${selectRemp}</select>
                 </div>
 

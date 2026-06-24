@@ -142,11 +142,10 @@
         .accordion-content { display: none; margin-bottom: 24px; background: rgba(30, 41, 59, 0.5); padding: 20px; border-radius: 16px; box-shadow: var(--card-shadow); border: 1px solid var(--border-color); }
         .accordion-content.open { display: block; animation: scaleIn 0.25s ease-out; }
 
-        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 12px; }
+        .inputs-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 12px; }
         .input-group { 
             display: flex; align-items: center; background: #0f172a; border: 1px solid var(--border-color); 
             border-radius: 12px; padding: 10px 14px; box-shadow: var(--card-shadow); transition: all 0.2s;
-            gap: 6px;
         }
         .input-group:focus-within { border-color: #38bdf8; box-shadow: 0 0 0 2px rgba(56,189,248,0.2); }
         .input-group.disabled-chef-box { background: rgba(15, 23, 42, 0.4); opacity: 0.7; border-color: transparent; box-shadow: none; }
@@ -155,71 +154,19 @@
         .emoji-select-wrapper.disabled-emoji { cursor: not-allowed; pointer-events: none; }
         .edit-emoji-select { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
-        .input-group input { border: none; background: transparent; width: 100%; font-size: 0.95rem; font-weight: 700; outline: none; padding: 0 0 0 4px; color: var(--text-main); }
+        .input-group input { border: none; background: transparent; width: 100%; font-size: 0.95rem; font-weight: 700; outline: none; padding: 0 0 0 8px; color: var(--text-main); }
         .input-group input:disabled { cursor: not-allowed; color: var(--text-muted); }
 
-        /* Style revisité du bouton absent global */
+        /* Bouton absent permanent */
         .absent-toggle {
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            cursor: pointer;
-            font-size: 1.05rem; 
-            padding: 6px; 
-            border-radius: 8px;
-            flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-            line-height: 1;
+            background: transparent; border: none; cursor: pointer;
+            font-size: 1rem; padding: 0 4px; flex-shrink: 0;
+            opacity: 0.35; transition: all 0.2s ease; line-height: 1;
         }
-        .absent-toggle:hover:not(:disabled) {
-            background: rgba(244, 63, 94, 0.1);
-            border-color: rgba(244, 63, 94, 0.4);
-            transform: scale(1.05);
-        }
-        .absent-toggle.absent-on { 
-            background: rgba(244, 63, 94, 0.2); 
-            border-color: #f43f5e;
-            box-shadow: 0 0 10px rgba(244, 63, 94, 0.4);
-        }
-        .absent-toggle:disabled { cursor: not-allowed; opacity: 0.3; }
+        .absent-toggle.absent-on { opacity: 1; filter: drop-shadow(0 0 4px rgba(244,63,94,0.6)); }
+        .absent-toggle:disabled { cursor: not-allowed; }
         .input-group.is-absent-global { background: rgba(244,63,94,0.05); border-color: rgba(244,63,94,0.25); }
         .input-group.is-absent-global input { color: #f43f5e; text-decoration: line-through; opacity: 0.6; }
-
-        /* Bouton absence sur période (Calendrier) */
-        .period-absent-btn {
-            background: rgba(255, 255, 255, 0.03); 
-            border: 1px solid rgba(255, 255, 255, 0.1); 
-            cursor: pointer;
-            font-size: 0.95rem; 
-            padding: 6px; 
-            border-radius: 8px;
-            flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            transition: all 0.25s ease;
-        }
-        .period-absent-btn:hover:not(:disabled) {
-            background: rgba(56, 189, 248, 0.1);
-            border-color: rgba(56, 189, 248, 0.4);
-            transform: scale(1.05);
-        }
-        .period-absent-btn.has-period {
-            background: rgba(16, 185, 129, 0.15);
-            border-color: #10b981;
-            box-shadow: 0 0 8px rgba(16, 185, 129, 0.3);
-        }
-
-        /* Modale pour période d'absence */
-        .modal-period {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(15, 23, 42, 0.8); backdrop-filter: blur(8px);
-            z-index: 4000; display: none; justify-content: center; align-items: center; padding: 16px;
-        }
-        .modal-period-card {
-            background: #1e293b; border: 1px solid var(--border-color);
-            padding: 24px; border-radius: 20px; max-width: 400px; width: 100%;
-            box-shadow: var(--card-shadow); display: flex; flex-direction: column; gap: 16px;
-            animation: scaleIn 0.25s ease;
-        }
 
         /* Grille & Cartes de planning */
         .page-section { display: none; }
@@ -295,7 +242,7 @@
         }
 
         /* ------------------------------------------ */
-        /* 🔥 REFONTE ET OPTIMISATION MOBILE UNIQUE 🔥  */
+        /*  🔥 REFONTE ET OPTIMISATION MOBILE UNIQUE 🔥  */
         /* ------------------------------------------ */
         @media (max-width: 768px) {
             body { flex-direction: column; }
@@ -353,28 +300,7 @@
 </head>
 <body>
 
-    <div id="periodModal" class="modal-period">
-        <div class="modal-period-card">
-            <h3 style="margin:0; font-weight:800; font-size:1.2rem; color:#38bdf8;">📅 Absence sur une période</h3>
-            <p style="margin:0; font-size:0.85rem; color:var(--text-muted);" id="periodModalUserText">Définir les dates d'absence pour</p>
-            
-            <div class="form-control" style="margin-bottom:12px;">
-                <label>Du (inclus) :</label>
-                <input type="date" id="periodStartInput">
-            </div>
-            <div class="form-control" style="margin-bottom:12px;">
-                <label>Au (inclus) :</label>
-                <input type="date" id="periodEndInput">
-            </div>
-            
-            <div style="display:flex; gap:10px; margin-top:8px;">
-                <button class="primary-btn" id="periodSaveBtn" style="background:#10b981;">Enregistrer</button>
-                <button class="primary-btn" id="periodClearBtn" style="background:#ef4444;">Supprimer</button>
-            </div>
-            <button class="primary-btn" id="periodCancelBtn" style="background:#475569;">Annuler</button>
-        </div>
-    </div>
-
+    <!-- ÉCRAN D'ACCUEIL / PROFIL -->
     <div id="welcomeScreen" class="welcome-screen">
         <div class="welcome-card">
             <h2>✨ Jeudi Cuistot</h2>
@@ -383,7 +309,8 @@
             <div class="form-control">
                 <label for="existingProfileSelect">👤 Profil existant :</label>
                 <select id="existingProfileSelect">
-                    </select>
+                    <!-- Rempli en JS avec la case vide obligatoire -->
+                </select>
             </div>
             <button class="primary-btn" id="loginBtn" disabled>Se connecter</button>
 
@@ -403,6 +330,7 @@
         </div>
     </div>
 
+    <!-- ÉCRAN CONFLIT DE SESSION (DOUBLE CONNEXION) -->
     <div id="sessionConflictScreen" class="session-conflict-screen">
         <div class="welcome-card" style="border: 2px solid #f43f5e;">
             <h2 style="color: #f43f5e;">⚠️ Connexion interrompue</h2>
@@ -411,6 +339,7 @@
         </div>
     </div>
 
+    <!-- SIDEBAR DESKTOP -->
     <div class="sidebar">
         <div class="logo-area">✨ <span>Paramètres</span></div>
         <div class="current-user-box">
@@ -426,6 +355,7 @@
         <button class="nav-btn" id="btn-vaisselle">🧼 <span>Vaisselle</span></button>
     </div>
 
+    <!-- BARRE NAV BASSE MOBILE -->
     <div class="mobile-nav">
         <button class="mobile-nav-btn active" id="mbtn-aperçu"><span>📅</span><span>Planning</span></button>
         <button class="mobile-nav-btn" id="mbtn-galerie"><span>📸</span><span>Galerie</span></button>
@@ -434,6 +364,7 @@
         <button class="mobile-nav-btn" id="mbtn-logout"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
+    <!-- ZONE PRINCIPALE -->
     <div class="main-content">
         <div class="header-status">
             <h1> ✨ Planning ✨ </h1>
@@ -450,6 +381,7 @@
             </div>
         </div>
 
+        <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
             <div class="accordion-header" id="teamAccordionHeader">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
@@ -463,12 +395,14 @@
             <div class="cards-grid" id="cardsContainer"></div>
         </div>
 
+        <!-- ONGLET 2 : GALERIE -->
         <div id="page-galerie" class="page-section">
             <h2 style="font-weight:800; font-size:1.25rem; margin: 0 0 4px 0; color:white;">📸 Les Photos des Plats</h2>
             <p style="color:var(--text-muted); margin-bottom:24px; margin-top:0; font-size:0.85rem;">Collez le lien d'une photo pour l'immortaliser.</p>
             <div class="galerie-grid" id="galerieContainer"></div>
         </div>
 
+        <!-- ONGLET 3 : STATS -->
         <div id="page-stats" class="page-section">
             <div class="stats-container">
                 <h2 id="statsTitle" style="margin-top:0; font-weight:800; font-size:1.25rem; margin-bottom:4px;">🏆 Classement</h2>
@@ -492,6 +426,7 @@
             </div>
         </div>
 
+        <!-- ONGLET 4 : VAISSELLE -->
         <div id="page-vaisselle" class="page-section">
             <div class="stats-container" style="text-align: center; max-width: 500px; margin: 0 auto; padding: 30px 20px;">
                 <h2 style="margin-top:0; font-weight:800; font-size:1.25rem; margin-bottom:4px;">🧼 Qui fait la vaisselle ?</h2>
@@ -546,15 +481,13 @@
     let thursdaysData = {};
     let overrides = {}; 
     let absentGlobaux = {};
-    let absentPeriods = {}; // Nouveau dictionnaire pour stocker les périodes { Nom: { start: 'YYYY-MM-DD', end: 'YYYY-MM-DD' } }
-    let allMonthsOverrides = {}; 
-    let rolesCache = {};         
+    let allMonthsOverrides = {}; // overrides manuels de tous les mois
+    let rolesCache = {};         // planning complet calculé séquentiellement
     let currentMonth = "2026-06";
     let currentUser = "";
     let unsubscribeMonth = null;
     let unsubscribeSession = null;
     let isEditingTeam = false;
-    let periodTargetUser = ""; // Retient pour qui on gère la période d'absence dans la modale
 
     const monthNames = {
         "2026-06": "Juin", "2026-07": "Juillet", "2026-08": "Août",
@@ -581,10 +514,8 @@
             btn.className = `emoji-btn ${isFirstEmoji ? 'selected' : ''}`;
             btn.innerText = emoji;
             btn.type = "button";
-            if(isFirstEmoji) {
-                selectedEmoji = emoji;
-                isFirstEmoji = false;
-            }
+            if(isFirstEmoji) { selectedEmoji = emoji; isFirstEmoji = false; }
+
             btn.addEventListener('click', () => {
                 document.querySelectorAll('.emoji-btn').forEach(b => b.classList.remove('selected'));
                 btn.classList.add('selected');
@@ -609,14 +540,14 @@
         let date = new Date(year, 0, 1);
         let thursdaysCount = 0;
         let thursdaysInRequestedMonth = [];
+        
         while (date.getFullYear() === year) {
             if (date.getDay() === 4) {
                 if (date.getMonth() === monthIndex) {
                     thursdaysInRequestedMonth.push({
                         dateText: `Jeudi ${date.getDate()} ${monthNames[`2026-${String(monthIndex + 1).padStart(2, '0')}`]}`,
                         globalIndex: thursdaysCount,
-                        dayOfMonth: date.getDate(),
-                        rawDateStr: `2026-${String(monthIndex + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+                        dayOfMonth: date.getDate()
                     });
                 }
                 thursdaysCount++;
@@ -626,6 +557,7 @@
         return thursdaysInRequestedMonth;
     }
 
+    // ─── Détermine si un jeudi est dans le passé (strictement avant aujourd'hui) ───
     function isPastThursday(year, monthIndex, dayOfMonth) {
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -634,20 +566,7 @@
         return thursdayDate < today;
     }
 
-    // Vérifie si un participant est absent à une date précise à cause d'une période d'absence
-    function isAbsentOnDateStr(user, dateStr) {
-        if (!absentPeriods[user]) return false;
-        const target = new Date(dateStr);
-        if (isNaN(target)) return false;
-        
-        const start = absentPeriods[user].start ? new Date(absentPeriods[user].start) : null;
-        const end = absentPeriods[user].end ? new Date(absentPeriods[user].end) : null;
-        
-        if (start && target < start) return false;
-        if (end && target > end) return false;
-        return (start || end) ? true : false;
-    }
-
+    // ─── Charge les overrides manuels depuis Firestore (tous les mois) ───
     async function loadAllMonthsOverrides() {
         const allMonths = ["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
         allMonthsOverrides = {};
@@ -656,14 +575,17 @@
                 const snap = await getDoc(doc(db, "planning", `mois_${m}`));
                 if (snap.exists()) {
                     const raw = snap.data().overrides || {};
+                    // Nettoyer les overrides partiels (anciens bugs) : on ne garde
+                    // que ceux qui ont les 3 champs renseignés
                     Object.entries(raw).forEach(([idx, val]) => {
                         if (val && val.plat && val.dessert && val.remp) {
                             allMonthsOverrides[idx] = val;
                         }
                     });
                 }
-            } catch(e) {}
+            } catch(e) { /* mois pas encore créé */ }
         }
+        // Le mois courant en mémoire est toujours plus frais
         Object.entries(overrides).forEach(([idx, val]) => {
             if (val && val.plat && val.dessert && val.remp) {
                 allMonthsOverrides[idx] = val;
@@ -672,748 +594,837 @@
         rebuildRolesCache();
     }
 
+    // ─── Reconstruit le planning COMPLET de façon séquentielle ───
+    // DEUX PASSES SÉPARÉES :
+    //   Passe 1 – jours PASSÉS : tous les participants (absents inclus) pour
+    //             préserver l'historique exact. Les jours passés sans override
+    //             sont automatiquement gelés dans allMonthsOverrides + Firestore.
+    //   Passe 2 – jours FUTURS : seulement les participants actifs (sans absents).
     function rebuildRolesCache() {
         rolesCache = {};
+
         const today = new Date();
         today.setHours(0, 0, 0, 0);
-        const totalThursdays = getTotalThursdaysInYear(2026);
 
-        const yearThursdaysList = [];
-        let tempDate = new Date(2026, 0, 1);
-        let tCount = 0;
-        while(tempDate.getFullYear() === 2026) {
-            if(tempDate.getDay() === 4) {
-                yearThursdaysList.push({
-                    globalIndex: tCount,
-                    year: 2026,
-                    monthIndex: tempDate.getMonth(),
-                    dayOfMonth: tempDate.getDate(),
-                    rawDateStr: `2026-${String(tempDate.getMonth() + 1).padStart(2, '0')}-${String(tempDate.getDate()).padStart(2, '0')}`
-                });
-                tCount++;
-            }
-            tempDate.setDate(tempDate.getDate() + 1);
+        const totalThursdays = getTotalThursdaysInYear(2026);
+        const baseOrder = ["Jeanne","Laura","Claribel","Yoann","Lucas","Mireille","Candice","Killian","Annaig","Ewen","Anthony","Clement","Clémentine","Benoit"];
+
+        // ── PASSE 1 : jours passés avec TOUS les participants ──────────────────
+        const allSorted = baseOrder.filter(n => participants.includes(n));
+        participants.forEach(p => { if (!allSorted.includes(p)) allSorted.push(p); });
+
+        const countsAll = {};
+        allSorted.forEach(p => { countsAll[p] = { plat: 0, dessert: 0, remp: 0, total: 0 }; });
+
+        function pickLeastFrom(pool, counts, roleKey, exclude) {
+            const available = pool.filter(p => !exclude.includes(p));
+            available.sort((a, b) => {
+                const dr = counts[a][roleKey] - counts[b][roleKey];
+                if (dr !== 0) return dr;
+                const dt = counts[a].total - counts[b].total;
+                if (dt !== 0) return dt;
+                return pool.indexOf(a) - pool.indexOf(b);
+            });
+            return available[0] || "Aucun";
         }
 
-        let totalPlatCount = {};
-        let totalDessertCount = {};
-        participants.forEach(p => { totalPlatCount[p] = 0; totalDessertCount[p] = 0; });
+        const frozenUpdates = {}; // { monthId: { gIdx: roles } }
+        let lastPastIndex = -1;
 
-        // PASSE 1 : Jours passés
-        yearThursdaysList.forEach(t => {
-            const isPast = isPastThursday(t.year, t.monthIndex, t.dayOfMonth);
-            if (!isPast) return;
+        for (let i = 0; i < totalThursdays; i++) {
+            const thursdayDate = getThursdayDateFromGlobalIndex(i);
+            if (!thursdayDate || thursdayDate >= today) break; // on s'arrête au premier jour futur
+            lastPastIndex = i;
 
-            if (allMonthsOverrides[t.globalIndex]) {
-                const ov = allMonthsOverrides[t.globalIndex];
-                rolesCache[t.globalIndex] = { plat: ov.plat, dessert: ov.dessert, remp: ov.remp };
-                if(participants.includes(ov.plat)) totalPlatCount[ov.plat]++;
-                if(participants.includes(ov.dessert)) totalDessertCount[ov.dessert]++;
-                return;
+            let result;
+            if (allMonthsOverrides[i]) {
+                result = {
+                    plat:    allMonthsOverrides[i].plat    || "Aucun",
+                    dessert: allMonthsOverrides[i].dessert || "Aucun",
+                    remp:    allMonthsOverrides[i].remp    || "Aucun"
+                };
+            } else {
+                const plat    = pickLeastFrom(allSorted, countsAll, 'plat',    []);
+                const dessert = pickLeastFrom(allSorted, countsAll, 'dessert', [plat]);
+                const remp    = pickLeastFrom(allSorted, countsAll, 'remp',    [plat, dessert]);
+                result = { plat, dessert, remp };
+
+                // Geler dans allMonthsOverrides pour ne plus jamais être modifié
+                allMonthsOverrides[i] = { plat: result.plat, dessert: result.dessert, remp: result.remp };
+                const monthId = `${thursdayDate.getFullYear()}-${String(thursdayDate.getMonth() + 1).padStart(2, '0')}`;
+                if (!frozenUpdates[monthId]) frozenUpdates[monthId] = {};
+                frozenUpdates[monthId][i] = allMonthsOverrides[i];
+                if (monthId === currentMonth) overrides[i] = allMonthsOverrides[i];
             }
 
-            const availablePool = [...participants];
-            if (availablePool.length === 0) {
-                rolesCache[t.globalIndex] = { plat: "-", dessert: "-", remp: "-" };
-                return;
-            }
+            rolesCache[i] = result;
+            if (countsAll[result.plat])    { countsAll[result.plat].plat++;    countsAll[result.plat].total++;    }
+            if (countsAll[result.dessert]) { countsAll[result.dessert].dessert++; countsAll[result.dessert].total++; }
+            if (countsAll[result.remp])    { countsAll[result.remp].remp++;    countsAll[result.remp].total++;    }
+        }
 
-            let sortedPlat = [...availablePool].sort((a,b) => (totalPlatCount[a] || 0) - (totalPlatCount[b] || 0) || a.localeCompare(b));
-            let plat = sortedPlat[0];
-            totalPlatCount[plat]++;
-
-            let remainingForDessert = availablePool.filter(p => p !== plat);
-            if (remainingForDessert.length === 0) remainingForDessert = [...availablePool];
-            let sortedDessert = [...remainingForDessert].sort((a,b) => (totalDessertCount[a] || 0) - (totalDessertCount[b] || 0) || a.localeCompare(b));
-            let dessert = sortedDessert[0];
-            totalDessertCount[dessert]++;
-
-            let remainingForRemp = availablePool.filter(p => p !== plat && p !== dessert);
-            if(remainingForRemp.length === 0) remainingForRemp = [...availablePool];
-            let sortedRemp = [...remainingForRemp].sort((a,b) => (totalPlatCount[a] || 0) - (totalPlatCount[b] || 0) || a.localeCompare(b));
-            let remp = sortedRemp[0];
-
-            rolesCache[t.globalIndex] = { plat, dessert, remp };
-            freezePastDayIfNeeded(t.globalIndex, plat, dessert, remp);
+        // Sauvegarder les gels en Firestore (asynchrone)
+        Object.entries(frozenUpdates).forEach(([monthId, newOvs]) => {
+            setDoc(doc(db, "planning", `mois_${monthId}`), { overrides: newOvs }, { merge: true });
         });
 
-        // PASSE 2 : Jours futurs
-        yearThursdaysList.forEach(t => {
-            const isPast = isPastThursday(t.year, t.monthIndex, t.dayOfMonth);
-            if (isPast) return;
+        // ── PASSE 2 : jours FUTURS avec seulement les participants ACTIFS ──────
+        const activeParticipants = participants.filter(p => !absentGlobaux[p]);
+        if (activeParticipants.length === 0) return;
 
-            if (allMonthsOverrides[t.globalIndex]) {
-                const ov = allMonthsOverrides[t.globalIndex];
-                rolesCache[t.globalIndex] = { plat: ov.plat, dessert: ov.dessert, remp: ov.remp };
-                if(participants.includes(ov.plat)) totalPlatCount[ov.plat]++;
-                if(participants.includes(ov.dessert)) totalDessertCount[ov.dessert]++;
-                return;
-            }
+        const orderedActive = baseOrder.filter(n => activeParticipants.includes(n));
+        activeParticipants.forEach(p => { if (!orderedActive.includes(p)) orderedActive.push(p); });
 
-            // Exclure les absents globaux ainsi que les absents par période de cette date précise
-            const activePool = participants.filter(p => !absentGlobaux[p] && !isAbsentOnDateStr(p, t.rawDateStr));
-            if (activePool.length === 0) {
-                rolesCache[t.globalIndex] = { plat: "-", dessert: "-", remp: "-" };
-                return;
-            }
-
-            let sortedPlat = [...activePool].sort((a,b) => (totalPlatCount[a] || 0) - (totalPlatCount[b] || 0) || a.localeCompare(b));
-            let plat = sortedPlat[0];
-            totalPlatCount[plat]++;
-
-            let remainingForDessert = activePool.filter(p => p !== plat);
-            if (remainingForDessert.length === 0) remainingForDessert = [...activePool];
-            let sortedDessert = [...remainingForDessert].sort((a,b) => (totalDessertCount[a] || 0) - (totalDessertCount[b] || 0) || a.localeCompare(b));
-            let dessert = sortedDessert[0];
-            totalDessertCount[dessert]++;
-
-            let remainingForRemp = activePool.filter(p => p !== plat && p !== dessert);
-            if(remainingForRemp.length === 0) remainingForRemp = [...activePool];
-            let sortedRemp = [...remainingForRemp].sort((a,b) => (totalPlatCount[a] || 0) - (totalPlatCount[b] || 0) || a.localeCompare(b));
-            let remp = sortedRemp[0];
-
-            rolesCache[t.globalIndex] = { plat, dessert, remp };
+        // Initialiser les compteurs futurs depuis les comptes historiques des actifs
+        const countsFuture = {};
+        orderedActive.forEach(p => {
+            countsFuture[p] = {
+                plat:    countsAll[p] ? countsAll[p].plat    : 0,
+                dessert: countsAll[p] ? countsAll[p].dessert : 0,
+                remp:    countsAll[p] ? countsAll[p].remp    : 0,
+                total:   countsAll[p] ? countsAll[p].total   : 0
+            };
         });
 
-        renderPlanning();
-        renderStats();
+        for (let i = lastPastIndex + 1; i < totalThursdays; i++) {
+            let result;
+            if (allMonthsOverrides[i]) {
+                result = {
+                    plat:    allMonthsOverrides[i].plat    || "Aucun",
+                    dessert: allMonthsOverrides[i].dessert || "Aucun",
+                    remp:    allMonthsOverrides[i].remp    || "Aucun"
+                };
+            } else {
+                const plat    = pickLeastFrom(orderedActive, countsFuture, 'plat',    []);
+                const dessert = pickLeastFrom(orderedActive, countsFuture, 'dessert', [plat]);
+                const remp    = pickLeastFrom(orderedActive, countsFuture, 'remp',    [plat, dessert]);
+                result = { plat, dessert, remp };
+            }
+
+            rolesCache[i] = result;
+            if (countsFuture[result.plat])    { countsFuture[result.plat].plat++;    countsFuture[result.plat].total++;    }
+            if (countsFuture[result.dessert]) { countsFuture[result.dessert].dessert++; countsFuture[result.dessert].total++; }
+            if (countsFuture[result.remp])    { countsFuture[result.remp].remp++;    countsFuture[result.remp].total++;    }
+        }
     }
 
-    async function freezePastDayIfNeeded(globalIdx, plat, dessert, remp) {
-        let monthKey = "2026-06";
-        let date = new Date(2026, 0, 1);
-        let tCount = 0;
-        while(date.getFullYear() === 2026) {
-            if(date.getDay() === 4) {
-                if(tCount === parseInt(globalIdx)) {
-                    monthKey = `2026-${String(date.getMonth() + 1).padStart(2, '0')}`;
-                    break;
-                }
-                tCount++;
+    // Retourne la date réelle d'un jeudi depuis son globalIndex (dans l'année 2026)
+    function getThursdayDateFromGlobalIndex(targetIndex) {
+        let count = 0;
+        const d = new Date(2026, 0, 1);
+        while (d.getFullYear() === 2026) {
+            if (d.getDay() === 4) {
+                if (count === targetIndex) return new Date(d);
+                count++;
             }
-            date.setDate(date.getDate() + 1);
+            d.setDate(d.getDate() + 1);
         }
-
-        if (allMonthsOverrides[globalIdx]) return;
-        allMonthsOverrides[globalIdx] = { plat, dessert, remp };
-
-        try {
-            const ref = doc(db, "planning", `mois_${monthKey}`);
-            const snap = await getDoc(ref);
-            let currentOverrides = {};
-            if(snap.exists()) {
-                currentOverrides = snap.data().overrides || {};
-            }
-            if (!currentOverrides[globalIdx]) {
-                currentOverrides[globalIdx] = { plat, dessert, remp };
-                await setDoc(ref, { overrides: currentOverrides }, { merge: true });
-            }
-        } catch(e) {}
+        return null;
     }
 
     function getTotalThursdaysInYear(year) {
-        let date = new Date(year, 0, 1);
         let count = 0;
-        while (date.getFullYear() === year) {
-            if (date.getDay() === 4) count++;
-            date.setDate(date.getDate() + 1);
+        const d = new Date(year, 0, 1);
+        while (d.getFullYear() === year) {
+            if (d.getDay() === 4) count++;
+            d.setDate(d.getDate() + 1);
         }
         return count;
     }
 
-    function setupRealtimeListener() {
+    function getRolesForGlobalIndex(globalIndex) {
+        if (rolesCache[globalIndex]) return rolesCache[globalIndex];
+        // Fallback si cache pas encore prêt (rare)
+        const active = participants.filter(p => !absentGlobaux[p]);
+        return {
+            plat:    active[0] || "Aucun",
+            dessert: active[1] || active[0] || "Aucun",
+            remp:    active[2] || active[0] || "Aucun"
+        };
+    }
+
+    // Gestion du routage interne
+    function switchPage(pageId) {
+        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
+        document.querySelectorAll('.nav-btn, .mobile-nav-btn').forEach(b => b.classList.remove('active'));
+        
+        document.getElementById(`page-${pageId}`).classList.add('active');
+        const pcBtn = document.getElementById(`btn-${pageId}`);
+        const mobBtn = document.getElementById(`mbtn-${pageId}`);
+        if(pcBtn) pcBtn.classList.add('active');
+        if(mobBtn) mobBtn.classList.add('active');
+        
+        if(pageId === 'stats') generateStats();
+        if(pageId === 'galerie') generateGalerie();
+        if(pageId === 'vaisselle') initVaissellePage();
+    }
+
+    // Assignation des événements de navigation
+    const pages = ['aperçu', 'galerie', 'stats', 'vaisselle'];
+    pages.forEach(page => {
+        document.getElementById(`btn-${page}`).addEventListener('click', () => switchPage(page));
+        document.getElementById(`mbtn-${page}`).addEventListener('click', () => switchPage(page));
+    });
+
+    document.getElementById('monthSelect').addEventListener('change', (e) => {
+        currentMonth = e.target.value;
+        document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
+        connectToMonth(currentMonth);
+    });
+
+    function generateSessionId() {
+        let token = sessionStorage.getItem('jeudiCuistot_session_token');
+        if (!token) {
+            token = Math.random().toString(36).substring(2, 15) + Date.now().toString(36);
+            sessionStorage.setItem('jeudiCuistot_session_token', token);
+        }
+        return token;
+    }
+
+    function listenToUserSession(userName) {
+        if (unsubscribeSession) unsubscribeSession();
+        
+        const mySessionToken = generateSessionId();
+
+        setDoc(doc(db, "sessions", userName), { 
+            activeToken: mySessionToken, 
+            lastActive: Date.now() 
+        }, { merge: true });
+
+        unsubscribeSession = onSnapshot(doc(db, "sessions", userName), (snap) => {
+            if (snap.exists()) {
+                const data = snap.data();
+                if (data.activeToken && data.activeToken !== mySessionToken) {
+                    handleSessionConflict();
+                }
+            }
+        });
+    }
+
+    function handleSessionConflict() {
+        if (unsubscribeSession) unsubscribeSession();
         if (unsubscribeMonth) unsubscribeMonth();
         
-        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${currentMonth}`), (snapshot) => {
-            if (snapshot.exists()) {
-                const data = snapshot.data();
-                participants = data.participants || [...defaultParticipants];
-                customEmojisMapping = data.customEmojis || {};
-                thursdaysData = data.days || {};
-                overrides = data.overrides || {};
-                absentGlobaux = data.absentGlobaux || {};
-                absentPeriods = data.absentPeriods || {}; // Récupération des périodes d'absence
-                
-                // Mettre à jour allMonthsOverrides avec les overrides locaux du mois fraîchement reçus
-                Object.entries(overrides).forEach(([idx, val]) => {
-                    if (val && val.plat && val.dessert && val.remp) {
-                        allMonthsOverrides[idx] = val;
-                    }
+        localStorage.removeItem('jeudiCuistot_user');
+        document.getElementById('sessionConflictScreen').style.display = 'flex';
+    }
+
+    document.getElementById('conflictResetBtn').addEventListener('click', () => {
+        window.location.reload();
+    });
+
+    function checkUserSession() {
+        const savedUser = localStorage.getItem('jeudiCuistot_user');
+        if (savedUser && participants.includes(savedUser)) {
+            if (savedUser.toLowerCase() === "lucas") {
+                const mdp = prompt("Entrez le mot de passe pour le profil Lucas :");
+                if (mdp !== "1972") {
+                    alert("Mot de passe incorrect.");
+                    localStorage.removeItem('jeudiCuistot_user');
+                    document.getElementById('welcomeScreen').style.display = 'flex';
+                    return;
+                }
+            }
+            currentUser = savedUser;
+            document.getElementById('welcomeScreen').style.display = 'none';
+            updateSidebarUserInfo();
+            generatePlanningCards();
+            initInputs(); 
+            listenToUserSession(currentUser);
+        } else {
+            document.getElementById('welcomeScreen').style.display = 'flex';
+        }
+    }
+
+    function updateSidebarUserInfo() {
+        const emoji = customEmojisMapping[currentUser] || "🦊";
+        document.getElementById('sidebarUserName').innerText = currentUser;
+        document.getElementById('sidebarUserEmoji').innerText = emoji;
+        document.getElementById('mobileUserName').innerText = currentUser;
+    }
+
+    // Validation dynamique du choix du profil
+    const existingProfileSelect = document.getElementById('existingProfileSelect');
+    const loginBtn = document.getElementById('loginBtn');
+    
+    existingProfileSelect.addEventListener('change', () => {
+        if (existingProfileSelect.value === "") {
+            loginBtn.disabled = true;
+        } else {
+            loginBtn.disabled = false;
+        }
+    });
+
+    loginBtn.addEventListener('click', () => {
+        const selected = existingProfileSelect.value;
+        if(selected) {
+            if (selected.toLowerCase() === "lucas") {
+                const mdp = prompt("Entrez le mot de passe pour le profil Lucas :");
+                if (mdp !== "1972") {
+                    return alert("Mot de passe incorrect.");
+                }
+            }
+            currentUser = selected;
+            localStorage.setItem('jeudiCuistot_user', currentUser);
+            document.getElementById('welcomeScreen').style.display = 'none';
+            updateSidebarUserInfo();
+            generatePlanningCards();
+            initInputs(); 
+            listenToUserSession(currentUser);
+        }
+    });
+
+    document.getElementById('createProfileBtn').addEventListener('click', () => {
+        const inputName = document.getElementById('newProfileName').value.trim();
+        if (inputName === "") return alert("Prénom invalide.");
+        if (participants.some(p => p.toLowerCase() === inputName.toLowerCase())) return alert("Prénom déjà pris.");
+        
+        if (inputName.toLowerCase() === "lucas") {
+            const mdp = prompt("Création du profil Lucas détectée. Entrez le mot de passe :");
+            if (mdp !== "1972") {
+                return alert("Mot de passe incorrect. Création annulée.");
+            }
+        }
+
+        participants.push(inputName);
+        customEmojisMapping[inputName] = selectedEmoji;
+
+        setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping }, { merge: true }).then(() => {
+            currentUser = inputName;
+            localStorage.setItem('jeudiCuistot_user', currentUser);
+            document.getElementById('newProfileName').value = "";
+            document.getElementById('welcomeScreen').style.display = 'none';
+            updateSidebarUserInfo();
+            generatePlanningCards();
+            initInputs();
+            listenToUserSession(currentUser);
+        });
+    });
+
+    function triggerLogout() {
+        if(confirm("Voulez-vous changer de profil ou vous déconnecter ?")) {
+            if (unsubscribeSession) unsubscribeSession();
+            localStorage.removeItem('jeudiCuistot_user');
+            currentUser = "";
+            fillExistingProfilesDropdown();
+            document.getElementById('welcomeScreen').style.display = 'flex';
+        }
+    }
+    document.getElementById('logoutBtn').addEventListener('click', triggerLogout);
+    document.getElementById('mbtn-logout').addEventListener('click', triggerLogout);
+
+    function fillExistingProfilesDropdown() {
+        const select = document.getElementById('existingProfileSelect');
+        select.innerHTML = "";
+        
+        // Option vide forcée par défaut au démarrage
+        const defaultOpt = document.createElement('option');
+        defaultOpt.value = "";
+        defaultOpt.innerText = "── Sélectionnez votre profil ──";
+        defaultOpt.selected = true;
+        select.appendChild(defaultOpt);
+        
+        loginBtn.disabled = true;
+
+        participants.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p;
+            opt.innerText = `${customEmojisMapping[p] || "🦊"} ${p}`;
+            select.appendChild(opt);
+        });
+        document.getElementById('teamCount').innerText = participants.length;
+    }
+
+    onSnapshot(doc(db, "planning", "global_team"), (teamSnap) => {
+        if (teamSnap.exists()) {
+            const teamData = teamSnap.data();
+            participants = teamData.names || [...defaultParticipants];
+            customEmojisMapping = teamData.customEmojisMapping || {};
+            absentGlobaux = teamData.absentGlobaux || {};
+        }
+        
+        fillExistingProfilesDropdown();
+        checkUserSession();
+        
+        if (!isEditingTeam) {
+            initInputs();
+        }
+        
+        if(currentUser) {
+            generatePlanningCards();
+            if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+            if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
+            if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
+        }
+    });
+
+    function initInputs() {
+        const container = document.getElementById('inputsContainer');
+        container.innerHTML = '';
+        participants.forEach((name, index) => {
+            const currentEmoji = customEmojisMapping[name] || "🦊";
+            const isAbsent = !!absentGlobaux[name];
+            const div = document.createElement('div');
+            
+            const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
+            
+            div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''} ${isAbsent ? 'is-absent-global' : ''}`;
+            let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
+            
+            div.innerHTML = `
+                <div class="emoji-select-wrapper ${!canEdit ? 'disabled-emoji' : ''}">
+                    <span id="visual-emoji-${index}">${currentEmoji}</span>
+                    <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}" ${!canEdit ? 'disabled' : ''}>${emojiOptionsHTML}</select>
+                </div>
+                <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}" ${!canEdit ? 'disabled' : ''}>
+                <button class="absent-toggle ${isAbsent ? 'absent-on' : ''}" title="${isAbsent ? 'Marqé absent — cliquer pour réactiver' : 'Marquer absent permanent'}" id="absent-btn-${index}" ${!canEdit ? 'disabled' : ''}>🚫</button>
+            `;
+            container.appendChild(div);
+            
+            if (canEdit) {
+                const selectEl = document.getElementById(`emoji-select-${index}`);
+                const inputEl = document.getElementById(`input-chef-${index}`);
+                const absentBtn = document.getElementById(`absent-btn-${index}`);
+
+                selectEl.addEventListener('change', (e) => {
+                    const selected = e.target.value;
+                    const idx = e.target.dataset.index;
+                    const pName = participants[idx];
+                    customEmojisMapping[pName] = selected;
+                    document.getElementById(`visual-emoji-${idx}`).innerText = selected;
+                    if(currentUser === pName) updateSidebarUserInfo();
+                    setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
                 });
+
+                absentBtn.addEventListener('click', () => {
+                    const pName = participants[index];
+                    if (absentGlobaux[pName]) {
+                        delete absentGlobaux[pName];
+                    } else {
+                        absentGlobaux[pName] = true;
+                    }
+                    // rebuildRolesCache gèle automatiquement les jours passés avant de recalculer
+                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
+                    rebuildRolesCache();
+                    generatePlanningCards();
+                });
+
+                inputEl.addEventListener('focus', () => { isEditingTeam = true; });
+
+                inputEl.addEventListener('blur', (e) => {
+                    const idx = e.target.dataset.index; 
+                    const oldName = participants[idx]; 
+                    const newName = e.target.value.trim();
+                    
+                    isEditingTeam = false;
+
+                    if(oldName === newName || !newName) return;
+                    if(participants.some((p, pIdx) => p.toLowerCase() === newName.toLowerCase() && pIdx != idx)) { 
+                        e.target.value = oldName; 
+                        return alert("Nom existant."); 
+                    }
+
+                    participants[idx] = newName;
+                    if(customEmojisMapping[oldName]) { 
+                        customEmojisMapping[newName] = customEmojisMapping[oldName]; 
+                        delete customEmojisMapping[oldName]; 
+                    }
+                    if(absentGlobaux[oldName]) {
+                        absentGlobaux[newName] = true;
+                        delete absentGlobaux[oldName];
+                    }
+                    if(currentUser === oldName) { 
+                        currentUser = newName; 
+                        localStorage.setItem('jeudiCuistot_user', currentUser); 
+                        updateSidebarUserInfo(); 
+                    }
+
+                    setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping, absentGlobaux: absentGlobaux }, { merge: true });
+                });
+            }
+        });
+    }
+
+    function connectToMonth(monthId) {
+        if (unsubscribeMonth) unsubscribeMonth();
+        unsubscribeMonth = onSnapshot(doc(db, "planning", `mois_${monthId}`), async (docSnap) => {
+            if (docSnap.exists()) {
+                const data = docSnap.data();
+                thursdaysData = data.thursdaysData || {};
+                overrides = data.overrides || {};
             } else {
-                participants = [...defaultParticipants];
-                customEmojisMapping = {};
                 thursdaysData = {};
                 overrides = {};
-                absentGlobaux = {};
-                absentPeriods = {};
             }
-            
-            updateTeamAccordion();
-            rebuildRolesCache();
-            updateExistingProfilesSelect();
-            updateVaisselleDateSelect();
+            // Recharge l'historique complet pour que le calcul équitable soit exact
+            await loadAllMonthsOverrides();
+            if(currentUser) {
+                generatePlanningCards();
+                if (document.getElementById('page-stats').classList.contains('active')) generateStats();
+                if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
+                if (document.getElementById('page-vaisselle').classList.contains('active')) initVaissellePage();
+            }
         });
     }
 
-    function updateTeamAccordion() {
-        document.getElementById('teamCount').innerText = participants.length;
-        const container = document.getElementById('inputsContainer');
-        container.innerHTML = "";
+    connectToMonth(currentMonth);
 
-        const isMeChef = (currentUser === "Lucas" || currentUser === "Laura");
+    function updateRoleManually(globalIndex, roleType, selectedValue) {
+        // Lire le résultat actuel du cache (avant modification) pour avoir les 3 rôles
+        const current = rolesCache[globalIndex] || getRolesForGlobalIndex(globalIndex);
 
-        participants.forEach((name) => {
-            const isAbsentGlobal = !!absentGlobaux[name];
-            const hasPeriod = !!absentPeriods[name] && (absentPeriods[name].start || absentPeriods[name].end);
+        // Construire un override complet avec les 3 champs
+        const fullOverride = {
+            plat:    current.plat    || "Aucun",
+            dessert: current.dessert || "Aucun",
+            remp:    current.remp    || "Aucun"
+        };
+        fullOverride[roleType] = selectedValue;
 
-            const group = document.createElement('div');
-            group.className = `input-group ${isAbsentGlobal ? 'is-absent-global' : ''} ${!isMeChef ? 'disabled-chef-box' : ''}`;
+        // Sauvegarder dans les deux caches
+        overrides[globalIndex] = fullOverride;
+        allMonthsOverrides[globalIndex] = fullOverride;
 
-            // Wrapper Avatar
-            const wrapper = document.createElement('div');
-            wrapper.className = `emoji-select-wrapper ${!isMeChef ? 'disabled-emoji' : ''}`;
-            const currentEmoji = customEmojisMapping[name] || "🦊";
-            wrapper.innerText = currentEmoji;
+        // Reconstruire tout le planning séquentiellement
+        rebuildRolesCache();
 
-            if (isMeChef) {
-                const sel = document.createElement('select');
-                sel.className = 'edit-emoji-select';
-                allAvailableEmojis.forEach(em => {
-                    const op = document.createElement('option');
-                    op.value = em; op.innerText = em;
-                    if(em === currentEmoji) op.selected = true;
-                    sel.appendChild(op);
-                });
-                sel.addEventListener('change', async (e) => {
-                    customEmojisMapping[name] = e.target.value;
-                    await saveTeamState();
-                });
-                wrapper.appendChild(sel);
-            }
-            group.appendChild(wrapper);
-
-            // Input Prénom
-            const input = document.createElement('input');
-            input.type = "text";
-            input.value = name;
-            input.disabled = !isMeChef;
-            
-            let typingTimer;
-            input.addEventListener('input', (e) => {
-                clearTimeout(typingTimer);
-                typingTimer = setTimeout(async () => {
-                    const idx = participants.indexOf(name);
-                    if(idx !== -1 && e.target.value.trim() !== "") {
-                        const oldName = participants[idx];
-                        const newName = e.target.value.trim();
-                        participants[idx] = newName;
-                        if(customEmojisMapping[oldName]) {
-                            customEmojisMapping[newName] = customEmojisMapping[oldName];
-                            delete customEmojisMapping[oldName];
-                        }
-                        if(absentGlobaux[oldName]) {
-                            absentGlobaux[newName] = absentGlobaux[oldName];
-                            delete absentGlobaux[oldName];
-                        }
-                        if(absentPeriods[oldName]) {
-                            absentPeriods[newName] = absentPeriods[oldName];
-                            delete absentPeriods[oldName];
-                        }
-                        await saveTeamState();
-                    }
-                }, 800);
-            });
-            group.appendChild(input);
-
-            // Bouton d'absence sur Période (Nouveau style Calendrier)
-            const periodBtn = document.createElement('button');
-            periodBtn.type = "button";
-            periodBtn.className = `period-absent-btn ${hasPeriod ? 'has-period' : ''}`;
-            periodBtn.title = hasPeriod ? "Période d'absence définie" : "Définir une période d'absence";
-            periodBtn.innerText = "📅";
-            periodBtn.disabled = !isMeChef && (currentUser !== name); // Autoriser le chef OU l'utilisateur lui-même
-            periodBtn.addEventListener('click', () => {
-                openPeriodModal(name);
-            });
-            group.appendChild(periodBtn);
-
-            // Bouton absent global révisé (Icone de Valise)
-            const toggle = document.createElement('button');
-            toggle.type = "button";
-            toggle.className = `absent-toggle ${isAbsentGlobal ? 'absent-on' : ''}`;
-            toggle.innerText = "🧳";
-            toggle.title = isAbsentGlobal ? "Marquer comme présent permanent" : "Marquer comme absent permanent";
-            toggle.disabled = !isMeChef && (currentUser !== name); // Autoriser le chef OU soi-même
-
-            toggle.addEventListener('click', async () => {
-                if(absentGlobaux[name]) {
-                    delete absentGlobaux[name];
-                } else {
-                    absentGlobaux[name] = true;
-                }
-                await saveTeamState();
-            });
-            group.appendChild(toggle);
-
-            container.innerHTML += ""; 
-            container.appendChild(group);
-        });
-
-        // Ligne ajout si Chef
-        if (isMeChef) {
-            const addGroup = document.createElement('div');
-            addGroup.className = 'input-group';
-            addGroup.style.border = '1px dashed #059669';
-            addGroup.style.background = 'rgba(5, 150, 105, 0.03)';
-            
-            const addIcon = document.createElement('span');
-            addIcon.innerText = "➕";
-            addIcon.style.marginRight = "4px";
-            addGroup.appendChild(addIcon);
-
-            const addInput = document.createElement('input');
-            addInput.placeholder = "Ajouter un cuistot...";
-            addInput.addEventListener('keydown', async (e) => {
-                if (e.key === 'Enter' && addInput.value.trim() !== "") {
-                    const newN = addInput.value.trim();
-                    if(!participants.includes(newN)) {
-                        participants.push(newN);
-                        customEmojisMapping[newN] = "🦊";
-                        addInput.value = "";
-                        await saveTeamState();
-                    }
-                }
-            });
-            addGroup.appendChild(addInput);
-            container.appendChild(addGroup);
-        }
+        // Persister dans Firestore
+        setDoc(doc(db, "planning", `mois_${currentMonth}`), { overrides: overrides }, { merge: true });
     }
 
-    // Gestion de la modale d'absence sur période
-    function openPeriodModal(user) {
-        periodTargetUser = user;
-        document.getElementById('periodModalUserText').innerText = `Définir les dates d'absence pour ${user}`;
-        
-        const currentPeriod = absentPeriods[user] || {};
-        document.getElementById('periodStartInput').value = currentPeriod.start || "";
-        document.getElementById('periodEndInput').value = currentPeriod.end || "";
-        
-        document.getElementById('periodModal').style.display = 'flex';
-    }
+    function togglePresenceCloud(globalIndex) {
+        if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = { presences: [], ratingsPlat: {}, ratingsDessert: {} };
+        let currentPresences = thursdaysData[globalIndex].presences || [];
 
-    function closePeriodModal() {
-        document.getElementById('periodModal').style.display = 'none';
-        periodTargetUser = "";
-    }
-
-    document.getElementById('periodCancelBtn').addEventListener('click', closePeriodModal);
-
-    document.getElementById('periodSaveBtn').addEventListener('click', async () => {
-        if (!periodTargetUser) return;
-        const startVal = document.getElementById('periodStartInput').value;
-        const endVal = document.getElementById('periodEndInput').value;
-        
-        if (!startVal && !endVal) {
-            delete absentPeriods[periodTargetUser];
+        if (currentPresences.includes(currentUser)) {
+            currentPresences = currentPresences.filter(p => p !== currentUser);
+            if (thursdaysData[globalIndex].ratingsPlat) delete thursdaysData[globalIndex].ratingsPlat[currentUser];
+            if (thursdaysData[globalIndex].ratingsDessert) delete thursdaysData[globalIndex].ratingsDessert[currentUser];
         } else {
-            absentPeriods[periodTargetUser] = { start: startVal || null, end: endVal || null };
+            currentPresences.push(currentUser);
         }
-        closePeriodModal();
-        await saveTeamState();
-    });
 
-    document.getElementById('periodClearBtn').addEventListener('click', async () => {
-        if (!periodTargetUser) return;
-        delete absentPeriods[periodTargetUser];
-        closePeriodModal();
-        await saveTeamState();
-    });
-
-    async function saveTeamState() {
-        isEditingTeam = true;
-        try {
-            await setDoc(doc(db, "planning", `mois_${currentMonth}`), {
-                participants: participants,
-                customEmojis: customEmojisMapping,
-                absentGlobaux: absentGlobaux,
-                absentPeriods: absentPeriods // Sauvegarde des périodes
-            }, { merge: true });
-        } catch(e) {}
-        isEditingTeam = false;
+        thursdaysData[globalIndex].presences = currentPresences;
+        setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
     }
 
-    function renderPlanning() {
+    function rateWeekCloud(globalIndex, type, score) {
+        if (!thursdaysData[globalIndex]) return;
+        const currentPresences = thursdaysData[globalIndex].presences || [];
+        if (!currentPresences.includes(currentUser)) return alert("Tu dois te mettre présent(e) pour voter !");
+
+        if (type === 'plat') {
+            if (!thursdaysData[globalIndex].ratingsPlat) thursdaysData[globalIndex].ratingsPlat = {};
+            thursdaysData[globalIndex].ratingsPlat[currentUser] = score;
+        } else {
+            if (!thursdaysData[globalIndex].ratingsDessert) thursdaysData[globalIndex].ratingsDessert = {};
+            thursdaysData[globalIndex].ratingsDessert[currentUser] = score;
+        }
+
+        setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
+    }
+
+    function addPhotoLink(globalIndex, type) {
+        const roles = getRolesForGlobalIndex(globalIndex);
+        const chefConcerne = type === 'plat' ? roles.plat : roles.dessert;
+
+        if (currentUser !== chefConcerne) {
+            return alert(`⛔ Seul(e) ${chefConcerne} peut ajouter ou modifier la photo de son ${type === 'plat' ? 'plat' : 'dessert'} !`);
+        }
+
+        if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = {};
+        
+        const label = type === 'plat' ? "du plat principal" : "du dessert";
+        const currentUrl = thursdaysData[globalIndex][`photo_${type}`] || "";
+        
+        const newUrl = prompt(`Colle l'adresse/URL de la photo ${label} :`, currentUrl);
+        
+        if (newUrl !== null) {
+            thursdaysData[globalIndex][`photo_${type}`] = newUrl.trim();
+            setDoc(doc(db, "planning", `mois_${currentMonth}`), { thursdaysData: thursdaysData }, { merge: true });
+        }
+    }
+
+    function generatePlanningCards() {
         const container = document.getElementById('cardsContainer');
         container.innerHTML = "";
 
-        const split = currentMonth.split('-');
-        const year = parseInt(split[0]);
-        const monthIdx = parseInt(split[1]) - 1;
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
 
-        document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
-
-        const thursdays = getThursdaysInMonthWithGlobalIndex(year, monthIdx);
-
-        thursdays.forEach((thurs, i) => {
-            const cardIdx = thurs.globalIndex;
-            const roles = rolesCache[cardIdx] || { plat: "-", dessert: "-", remp: "-" };
-            const dayData = thursdaysData[cardIdx] || {};
+        thursdays.forEach((thurs, idx) => {
+            const gIdx = thurs.globalIndex;
+            const roles = getRolesForGlobalIndex(gIdx);
             
-            const isMeChef = (currentUser === "Lucas" || currentUser === "Laura");
+            const dayData = thursdaysData[gIdx] || { presences: [], ratingsPlat: {}, ratingsDessert: {} };
+            const presences = dayData.presences || [];
+            const ratingsPlat = dayData.ratingsPlat || {};
+            const ratingsDessert = dayData.ratingsDessert || {};
+
+            const isPresent = presences.includes(currentUser);
+
+            // Déterminer si ce jeudi est passé
+            const isPast = isPastThursday(parseInt(year), monthIndex, thurs.dayOfMonth);
+            // Seul Lucas peut modifier les rôles des jours passés
+            const canEditRoles = !isPast || (currentUser && currentUser.toLowerCase() === "lucas");
+
+            const pVotes = Object.values(ratingsPlat);
+            const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";
+            const dVotes = Object.values(ratingsDessert);
+            const avgD = dVotes.length ? (dVotes.reduce((a,b)=>a+b,0)/dVotes.length).toFixed(1) : "-";
 
             const card = document.createElement('div');
-            card.className = `semaine-card sem-${(i % 5) + 1}`;
+            card.className = `semaine-card sem-${(idx % 5) + 1}`;
+            card.style.animationDelay = `${idx * 0.05}s`;
 
-            // Header
-            const header = document.createElement('div');
-            header.className = 'card-header';
-            header.innerHTML = `<span>${thurs.dateText}</span>`;
-            card.appendChild(header);
+            // Pour les jours passés : tous les participants (absents inclus) pour que
+            // les noms historiques apparaissent bien dans le select.
+            // Pour les jours futurs : seulement les actifs.
+            const poolForSelect = isPast ? participants : participants.filter(p => !absentGlobaux[p]);
+            let selectPlat    = poolForSelect.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectDessert = poolForSelect.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectRemp    = poolForSelect.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
 
-            // Fonction pour créer un Select de Rôle
-            const createRoleSelect = (labelName, currentRoleValue, roleKey) => {
-                const box = document.createElement('div');
-                box.className = 'role-box';
-                const label = document.createElement('div');
-                label.className = 'role-label';
-                label.innerText = labelName;
-                box.appendChild(label);
+            const platAbsent    = absentGlobaux[roles.plat]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const dessertAbsent = absentGlobaux[roles.dessert] ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const rempAbsent    = absentGlobaux[roles.remp]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
 
-                const select = document.createElement('select');
-                select.className = 'role-select-custom';
-                select.disabled = !isMeChef;
+            let presencesListHTML = presences.map(p => `${customEmojisMapping[p]||"🦊"} ${p}`).join(', ');
+            const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";
 
-                // Option par défaut de l'algorithme
-                const opDef = document.createElement('option');
-                opDef.value = "";
-                const emoDef = customEmojisMapping[currentRoleValue] || "🦊";
-                opDef.innerText = `🤖 ${emoDef} ${currentRoleValue} (Auto)`;
-                select.appendChild(opDef);
+            const pastBadge = isPast ? `<span style="font-size:0.65rem;font-weight:800;background:rgba(148,163,184,0.15);color:#94a3b8;padding:2px 8px;border-radius:20px;margin-left:8px;letter-spacing:0.5px;">PASSÉ</span>` : '';
+            const roleSelectDisabledAttr = canEditRoles ? '' : 'disabled';
+            const roleSelectDisabledStyle = canEditRoles ? '' : 'style="opacity:0.5;cursor:not-allowed;"';
+            const presenceBtnDisabled = isPast ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
 
-                // Liste de choix forcé
-                // Ne propose que les participants non absents par défaut sur cette date précise
-                const filteredParticipants = participants.filter(p => !absentGlobaux[p] && !isAbsentOnDateStr(p, thurs.rawDateStr));
+            card.innerHTML = `
+                <div class="card-header"><span>${thurs.dateText}${pastBadge}</span></div>
                 
-                // On s'assure de quand même laisser le choix aux participants existants si besoin
-                const uniqueSelectPool = Array.from(new Set([...filteredParticipants, currentRoleValue]));
+                <div class="role-box">
+                    <span class="role-label">🧑‍🍳 Plat Principal${platAbsent}</span>
+                    <select class="role-select-custom" data-role="plat" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectPlat}</select>
+                </div>
+                <div class="role-box">
+                    <span class="role-label">🧁 Dessert${dessertAbsent}</span>
+                    <select class="role-select-custom" data-role="dessert" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectDessert}</select>
+                </div>
+                <div class="role-box">
+                    <span class="role-label">🛟 Remplaçant${rempAbsent}</span>
+                    <select class="role-select-custom" data-role="remp" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectRemp}</select>
+                </div>
 
-                uniqueSelectPool.forEach(p => {
-                    if(!p || p === "-") return;
-                    const op = document.createElement('option');
-                    op.value = p;
-                    const emo = customEmojisMapping[p] || "🦊";
-                    op.innerText = `👤 ${emo} ${p}`;
-                    if (overrides[cardIdx] && overrides[cardIdx][roleKey] === p) {
-                        op.selected = true;
-                    }
-                    select.appendChild(op);
-                });
+                <div class="presence-zone">
+                    <div class="presence-header">
+                        <span>Inscrits : ${presences.length}</span>
+                        <button class="presence-btn ${isPresent?'active':''}" ${presenceBtnDisabled}>
+                            ${isPresent ? '✅ Présent' : '❌ Absent'}
+                        </button>
+                    </div>
+                    <div class="presence-list">${presencesListHTML || "Aucun inscrit pour le moment"}</div>
+                </div>
 
-                select.addEventListener('change', async (e) => {
-                    if (!overrides[cardIdx]) {
-                        overrides[cardIdx] = { plat: roles.plat, dessert: roles.dessert, remp: roles.remp };
-                    }
-                    if (e.target.value === "") {
-                        // On réinitialise l'override spécifique pour laisser l'algorithme faire
-                        delete overrides[cardIdx][roleKey];
-                        if (!overrides[cardIdx].plat && !overrides[cardIdx].dessert && !overrides[cardIdx].remp) {
-                            delete overrides[cardIdx];
-                        }
-                    } else {
-                        overrides[cardIdx][roleKey] = e.target.value;
-                    }
-                    allMonthsOverrides[cardIdx] = overrides[cardIdx];
-                    
-                    await setDoc(doc(db, "planning", `mois_${currentMonth}`), { overrides: overrides }, { merge: true });
-                    rebuildRolesCache();
-                });
+                <div class="rating-box" ${ratingStyle}>
+                    <div class="rating-row">
+                        <span class="role-label">Note Plat ${isPresent?'':'🔒'}</span>
+                        <div class="stars" data-type="plat"></div>
+                        <span class="avg-rating">⭐ ${avgP}</span>
+                    </div>
+                    <div class="rating-row">
+                        <span class="role-label">Note Dessert ${isPresent?'':'🔒'}</span>
+                        <div class="stars" data-type="dessert"></div>
+                        <span class="avg-rating">⭐ ${avgD}</span>
+                    </div>
+                </div>
+            `;
 
-                box.appendChild(select);
-                return box;
-            };
-
-            card.appendChild(createRoleSelect("🍳 Plat Principal", roles.plat, "plat"));
-            card.appendChild(createRoleSelect("🧁 Dessert", roles.dessert, "dessert"));
-            card.appendChild(createRoleSelect("🛡️ Remplaçant", roles.remp, "remp"));
-
-            // Zone présence
-            const pZone = document.createElement('div');
-            pZone.className = 'presence-zone';
-            
-            const pHeader = document.createElement('div');
-            pHeader.className = 'presence-header';
-            pHeader.innerText = "Présence cuistots";
-
-            const presentsArray = dayData.presences || [];
-            const isPresent = presentsArray.includes(currentUser);
-
-            // On cache le bouton de présence si l'utilisateur courant est absent (global ou sur la période actuelle)
-            const userIsAbsentThisDay = absentGlobaux[currentUser] || isAbsentOnDateStr(currentUser, thurs.rawDateStr);
-
-            if (currentUser && !userIsAbsentThisDay) {
-                const pBtn = document.createElement('button');
-                pBtn.className = `presence-btn ${isPresent ? 'active' : ''}`;
-                pBtn.innerText = isPresent ? "👍 Présent" : "❌ Absent";
-                pBtn.type = "button";
-                pBtn.addEventListener('click', async () => {
-                    let updated = [...presentsArray];
-                    if (isPresent) {
-                        updated = updated.filter(u => u !== currentUser);
-                    } else {
-                        updated.push(currentUser);
-                    }
-                    thursdaysData[cardIdx] = { ...dayData, presences: updated };
-                    await setDoc(doc(db, "planning", `mois_${currentMonth}`), { days: thursdaysData }, { merge: true });
-                });
-                pHeader.appendChild(pBtn);
-            }
-            pZone.appendChild(pHeader);
-
-            const pList = document.createElement('div');
-            pList.className = 'presence-list';
-            if (presentsArray.length === 0) {
-                pList.innerText = "Aucun inscrit pour le moment.";
-            } else {
-                pList.innerText = presentsArray.map(u => `${customEmojisMapping[u] || "🦊"} ${u}`).join(", ");
-            }
-            pZone.appendChild(pList);
-            card.appendChild(pZone);
-
-            // Notation Étoiles
-            const ratingBox = document.createElement('div');
-            ratingBox.className = 'rating-box';
-
-            const createStarRow = (titleLabel, currentRatingMap, ratingFieldKey) => {
-                const row = document.createElement('div');
-                row.className = 'rating-row';
-                row.innerHTML = `<span style="font-size:0.85rem; font-weight:700;">${titleLabel}</span>`;
-                
-                const starsDiv = document.createElement('div');
-                starsDiv.className = 'stars';
-                
-                const myVote = currentRatingMap[currentUser] || 0;
+            ['plat', 'dessert'].forEach(type => {
+                const starsContainer = card.querySelector(`.stars[data-type="${type}"]`);
+                const currentRatings = type === 'plat' ? ratingsPlat : ratingsDessert;
                 for(let s=1; s<=5; s++) {
                     const star = document.createElement('span');
-                    star.className = `star ${s <= myVote ? 'active' : ''}`;
-                    star.innerText = "★";
-                    if(currentUser) {
-                        star.addEventListener('click', async () => {
-                            let newVote = s;
-                            if (myVote === s) newVote = 0; // Toggle off
-                            
-                            const currentFieldData = dayData[ratingFieldKey] || {};
-                            if (newVote === 0) {
-                                delete currentFieldData[currentUser];
-                            } else {
-                                currentFieldData[currentUser] = newVote;
-                            }
-                            
-                            thursdaysData[cardIdx] = { ...dayData, [ratingFieldKey]: currentFieldData };
-                            await setDoc(doc(db, "planning", `mois_${currentMonth}`), { days: thursdaysData }, { merge: true });
-                        });
-                    }
-                    starsDiv.appendChild(star);
+                    star.className = `star ${(currentRatings[currentUser]||0)>=s?'active':''}`;
+                    star.innerText = '★';
+                    star.addEventListener('click', () => rateWeekCloud(gIdx, type, s));
+                    starsContainer.appendChild(star);
                 }
-                row.appendChild(starsDiv);
+            });
 
-                // Calcul moyenne brute
-                const votes = Object.values(currentRatingMap);
-                if (votes.length > 0) {
-                    const avg = (votes.reduce((a,b)=>a+b, 0) / votes.length).toFixed(1);
-                    const avgBadge = document.createElement('span');
-                    avgBadge.className = 'avg-rating';
-                    avgBadge.innerText = `⭐ ${avg}`;
-                    row.appendChild(avgBadge);
-                }
-                return row;
-            };
+            card.querySelectorAll('.role-select-custom').forEach(select => {
+                select.addEventListener('change', (e) => {
+                    updateRoleManually(gIdx, e.target.dataset.role, e.target.value);
+                });
+            });
 
-            ratingBox.appendChild(createStarRow("Note Plat :", dayData.notesPlat || {}, "notesPlat"));
-            ratingBox.appendChild(createStarRow("Note Dessert :", dayData.notesDessert || {}, "notesDessert"));
-            card.appendChild(ratingBox);
+            card.querySelector('.presence-btn').addEventListener('click', () => togglePresenceCloud(gIdx));
 
             container.appendChild(card);
         });
     }
 
-    function renderStats() {
-        const globalPlatScores = {};
-        const globalPlatCounts = {};
-        const globalDessertScores = {};
-        const globalDessertCounts = {};
-
-        participants.forEach(p => {
-            globalPlatScores[p] = 0; globalPlatCounts[p] = 0;
-            globalDessertScores[p] = 0; globalDessertCounts[p] = 0;
-        });
-
-        // Parcourir toutes les données de satisfaction enregistrées sur toute la db du mois courant
-        Object.keys(thursdaysData).forEach(cardIdx => {
-            const roles = rolesCache[cardIdx];
-            if (!roles) return;
-            const dayData = thursdaysData[cardIdx] || {};
-
-            if (roles.plat && participants.includes(roles.plat)) {
-                const votes = Object.values(dayData.notesPlat || {});
-                if(votes.length > 0) {
-                    const avg = votes.reduce((a,b)=>a+b,0) / votes.length;
-                    globalPlatScores[roles.plat] += avg;
-                    globalPlatCounts[roles.plat]++;
-                }
-            }
-            if (roles.dessert && participants.includes(roles.dessert)) {
-                const votes = Object.values(dayData.notesDessert || {});
-                if(votes.length > 0) {
-                    const avg = votes.reduce((a,b)=>a+b,0) / votes.length;
-                    globalDessertScores[roles.dessert] += avg;
-                    globalDessertCounts[roles.dessert]++;
-                }
-            }
-        });
-
-        const buildTableHTML = (scores, counts) => {
-            const list = participants.map(name => {
-                const count = counts[name] || 0;
-                const score = count > 0 ? (scores[name] / count).toFixed(2) : "0.00";
-                return { name, score: parseFloat(score), count };
-            }).filter(item => item.count > 0);
-
-            list.sort((a,b) => b.score - a.score || b.count - a.count || a.name.localeCompare(b.name));
-
-            if(list.length === 0) return `<tr><td colspan="4" style="text-align:center; color:var(--text-muted); font-size:0.85rem;">Aucune note attribuée ce mois-ci.</td></tr>`;
-
-            return list.map((item, idx) => {
-                const rank = idx + 1;
-                let rankClass = "";
-                if(rank === 1) rankClass = "rank-1";
-                if(rank === 2) rankClass = "rank-2";
-                if(rank === 3) rankClass = "rank-3";
-                const emo = customEmojisMapping[item.name] || "🦊";
-                return `<tr>
-                    <td><span class="badge-rank ${rankClass}">${rank}</span></td>
-                    <td style="font-weight:700;">${emo} ${item.name}</td>
-                    <td style="font-weight:800; color:#facc15;">★ ${item.score.toFixed(1)}</td>
-                    <td style="color:var(--text-muted); font-weight:700;">${item.count}x</td>
-                </tr>`;
-            }).join('');
-        };
-
-        document.getElementById('statsTitle').innerText = `🏆 Classement de ${monthNames[currentMonth]}`;
-        document.getElementById('statsTablePlat').innerHTML = buildTableHTML(globalPlatScores, globalPlatCounts);
-        document.getElementById('statsTableDessert').innerHTML = buildTableHTML(globalDessertScores, globalDessertCounts);
-    }
-
-    function renderGalerie() {
+    function generateGalerie() {
         const container = document.getElementById('galerieContainer');
         container.innerHTML = "";
 
-        const split = currentMonth.split('-');
-        const year = parseInt(split[0]);
-        const monthIdx = parseInt(split[1]) - 1;
-        const thursdays = getThursdaysInMonthWithGlobalIndex(year, monthIdx);
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
 
-        thursdays.forEach(thurs => {
-            const cardIdx = thurs.globalIndex;
-            const dayData = thursdaysData[cardIdx] || {};
-            const roles = rolesCache[cardIdx] || { plat: "-", dessert: "-" };
+        thursdays.forEach((thurs, idx) => {
+            const gIdx = thurs.globalIndex;
+            const roles = getRolesForGlobalIndex(gIdx);
+            const dayData = thursdaysData[gIdx] || {};
+            
+            const photoPlat = dayData.photo_plat || "";
+            const photoDessert = dayData.photo_dessert || "";
 
             const card = document.createElement('div');
             card.className = 'galerie-card';
+            card.style.animationDelay = `${idx * 0.05}s`;
 
-            const title = document.createElement('h3');
-            title.className = 'galerie-title';
-            title.innerText = thurs.dateText;
-            card.appendChild(title);
+            card.innerHTML = `
+                <h3 class="galerie-title">${thurs.dateText}</h3>
+                <div style="font-size: 0.75rem; color: var(--text-muted); font-weight: 700; margin-top:-6px; margin-bottom: 4px;">
+                    🧑‍🍳 Chef Plat : ${roles.plat} | Desserts : ${roles.dessert}
+                </div>
+                <div class="galerie-photos-container">
+                    <div class="photo-wrapper" data-type="plat">
+                        <span class="photo-label">🍕 Plat</span>
+                    </div>
+                    <div class="photo-wrapper" data-type="dessert">
+                        <span class="photo-label">🧁 Dessert</span>
+                    </div>
+                </div>
+            `;
 
-            const grid = document.createElement('div');
-            grid.className = 'galerie-photos-container';
-
-            // Fonction photo unifiée
-            const createPhotoBox = (labelTitle, imgUrl, storageKey, chefName) => {
-                const wrapper = document.createElement('div');
-                wrapper.className = 'photo-wrapper';
-                wrapper.innerHTML = `<div class="photo-label">${labelTitle}</div>`;
+            ['plat', 'dessert'].forEach(type => {
+                const wrapper = card.querySelector(`.photo-wrapper[data-type="${type}"]`);
+                const photoUrl = type === 'plat' ? photoPlat : photoDessert;
                 
-                if (imgUrl) {
+                if (photoUrl) {
                     const img = document.createElement('img');
                     img.className = 'photo-img';
-                    img.src = imgUrl;
-                    img.alt = labelTitle;
-                    wrapper.appendChild(img);
-                    
-                    if (currentUser === "Lucas" || currentUser === "Laura" || currentUser === chefName) {
-                        const btnDel = document.createElement('button');
-                        btnDel.className = 'btn-add-photo';
-                        btnDel.style.borderColor = '#f43f5e'; btnDel.style.color = '#f43f5e';
-                        btnDel.innerText = "Supprimer";
-                        btnDel.type = "button";
-                        btnDel.style.marginTop = "4px";
-                        btnDel.addEventListener('click', async () => {
-                            if(confirm("Supprimer cette image ?")) {
-                                delete thursdaysData[cardIdx][storageKey];
-                                await setDoc(doc(db, "planning", `mois_${currentMonth}`), { days: thursdaysData }, { merge: true });
-                            }
-                        });
-                        wrapper.appendChild(btnDel);
-                    }
+                    img.src = photoUrl;
+                    img.alt = type;
+                    img.addEventListener('error', () => {
+                        img.remove();
+                        const errDiv = document.createElement('div');
+                        errDiv.className = 'photo-empty';
+                        errDiv.innerText = 'Lien mort ❌';
+                        wrapper.insertBefore(errDiv, wrapper.firstChild);
+                    });
+                    wrapper.insertBefore(img, wrapper.firstChild);
                 } else {
                     const empty = document.createElement('div');
                     empty.className = 'photo-empty';
-                    const chefEmo = customEmojisMapping[chefName] || "🧑‍🍳";
-                    empty.innerText = `En attente du chef\n${chefEmo} ${chefName || '-'}`;
-                    wrapper.appendChild(empty);
-
-                    if (currentUser === "Lucas" || currentUser === "Laura" || currentUser === chefName) {
-                        const btnAdd = document.createElement('button');
-                        btnAdd.className = 'btn-add-photo';
-                        btnAdd.innerText = "Ajouter un lien";
-                        btnAdd.type = "button";
-                        btnAdd.addEventListener('click', async () => {
-                            const url = prompt("Collez l'URL de votre photo :");
-                            if(url && url.trim() !== "") {
-                                thursdaysData[cardIdx] = { ...dayData, [storageKey]: url.trim() };
-                                await setDoc(doc(db, "planning", `mois_${currentMonth}`), { days: thursdaysData }, { merge: true });
-                            }
-                        });
-                        wrapper.appendChild(btnAdd);
-                    }
+                    empty.innerText = type === 'plat' ? 'Pas de photo 🍳' : 'Pas de photo 🧁';
+                    wrapper.insertBefore(empty, wrapper.firstChild);
                 }
-                return wrapper;
-            };
 
-            grid.appendChild(createPhotoBox("🍳 Plat Principal", dayData.photoPlat, "photoPlat", roles.plat));
-            grid.appendChild(createPhotoBox("🧁 Dessert", dayData.photoDessert, "photoDessert", roles.dessert));
-            card.appendChild(grid);
+                const btn = document.createElement('button');
+                btn.className = 'btn-add-photo';
+                btn.innerText = '📸 Gérer';
+                btn.addEventListener('click', () => addPhotoLink(gIdx, type));
+                wrapper.appendChild(btn);
+            });
+
             container.appendChild(card);
         });
     }
 
-    function updateVaisselleDateSelect() {
-        const select = document.getElementById('vaisselleDateSelect');
-        const prevValue = select.value;
-        select.innerHTML = "";
+    function generateStats() {
+        const tbodyPlat    = document.getElementById('statsTablePlat');
+        const tbodyDessert = document.getElementById('statsTableDessert');
+        tbodyPlat.innerHTML = "";
+        tbodyDessert.innerHTML = "";
 
-        const split = currentMonth.split('-');
-        const year = parseInt(split[0]);
-        const monthIdx = parseInt(split[1]) - 1;
-        const thursdays = getThursdaysInMonthWithGlobalIndex(year, monthIdx);
+        // Collecter les scores séparément pour plat et dessert
+        const platScores    = {}; // { name: { totalScore, count } }
+        const dessertScores = {};
 
-        thursdays.forEach(t => {
-            const op = document.createElement('option');
-            op.value = t.globalIndex;
-            op.innerText = t.dateText;
-            if(t.globalIndex == prevValue) op.selected = true;
-            select.appendChild(op);
+        Object.keys(thursdaysData).forEach(gIdx => {
+            const roles   = getRolesForGlobalIndex(parseInt(gIdx));
+            const dayData = thursdaysData[gIdx];
+
+            if (dayData.ratingsPlat && roles.plat && roles.plat !== "Aucun") {
+                const votes = Object.values(dayData.ratingsPlat);
+                if (votes.length) {
+                    if (!platScores[roles.plat]) platScores[roles.plat] = { totalScore: 0, count: 0 };
+                    platScores[roles.plat].totalScore += votes.reduce((a,b) => a+b, 0) / votes.length;
+                    platScores[roles.plat].count++;
+                }
+            }
+
+            if (dayData.ratingsDessert && roles.dessert && roles.dessert !== "Aucun") {
+                const votes = Object.values(dayData.ratingsDessert);
+                if (votes.length) {
+                    if (!dessertScores[roles.dessert]) dessertScores[roles.dessert] = { totalScore: 0, count: 0 };
+                    dessertScores[roles.dessert].totalScore += votes.reduce((a,b) => a+b, 0) / votes.length;
+                    dessertScores[roles.dessert].count++;
+                }
+            }
         });
+
+        function buildLeaderboard(scores) {
+            return participants
+                .filter(p => scores[p] && scores[p].count > 0)
+                .map(p => ({
+                    name: p,
+                    avg:  (scores[p].totalScore / scores[p].count).toFixed(2),
+                    count: scores[p].count
+                }))
+                .sort((a, b) => b.avg - a.avg);
+        }
+
+        function fillTable(tbody, leaderboard, emptyMsg) {
+            if (leaderboard.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:16px;font-size:0.85rem;">${emptyMsg}</td></tr>`;
+                return;
+            }
+            leaderboard.forEach((chef, index) => {
+                const rank = index + 1;
+                const rankClass = rank <= 3 ? `badge-rank rank-${rank}` : `badge-rank`;
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><span class="${rankClass}">${rank}</span></td>
+                    <td style="font-weight:700;">${customEmojisMapping[chef.name]||"🦊"} ${chef.name}</td>
+                    <td style="font-weight:800; color:#38bdf8;">⭐ ${chef.avg}</td>
+                    <td style="color:var(--text-muted); font-size:0.82rem;">${chef.count}x</td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        fillTable(tbodyPlat,    buildLeaderboard(platScores),    "Aucune note plat 🍳");
+        fillTable(tbodyDessert, buildLeaderboard(dessertScores), "Aucune note dessert 🧁");
+    }
+
+    function initVaissellePage() {
+        const select = document.getElementById('vaisselleDateSelect');
+        const currentSelectedValue = select.value;
+        select.innerHTML = "";
+        
+        const [year, monthStr] = currentMonth.split("-");
+        const monthIndex = parseInt(monthStr) - 1;
+        const thursdays = getThursdaysInMonthWithGlobalIndex(parseInt(year), monthIndex);
+        
+        thursdays.forEach(thurs => {
+            const opt = document.createElement('option');
+            opt.value = thurs.globalIndex;
+            opt.innerText = thurs.dateText;
+            select.appendChild(opt);
+        });
+
+        if(currentSelectedValue && Array.from(select.options).some(o => o.value === currentSelectedValue)) {
+            select.value = currentSelectedValue;
+        }
     }
 
     document.getElementById('btn-roulette').addEventListener('click', () => {
-        const select = document.getElementById('vaisselleDateSelect');
-        const cardIdx = select.value;
-        if (!cardIdx) return;
-
-        const dayData = thursdaysData[cardIdx] || {};
+        const gIdx = document.getElementById('vaisselleDateSelect').value;
+        if (!gIdx) return;
+        
+        const dayData = thursdaysData[gIdx] || {};
         const presents = dayData.presences || [];
         
         if (presents.length < 2) {
@@ -1449,124 +1460,10 @@
             const emo2 = customEmojisMapping[p2] || "🦊";
 
             roue.innerText = "✨ Trouvé ! ✨";
-            resultDiv.innerHTML = `🎉 Les deux commis désignés d'office :<br><strong>${emo1} ${p1}</strong> & <strong>${emo2} ${p2}</strong> ! 🧼`;
-        }, 2200);
+            resultDiv.innerHTML = `🎉 Les deux commis désignés d'office :<br><strong>${emo1} ${p1}</strong> & <strong>${emo2} ${p2}</strong> 🧼`;
+        }, 2000);
     });
-
-    async function updateExistingProfilesSelect() {
-        const select = document.getElementById('existingProfileSelect');
-        select.innerHTML = '<option value="">-- Choisis ton nom --</option>';
-        participants.forEach(p => {
-            const op = document.createElement('option');
-            op.value = p;
-            op.innerText = `${customEmojisMapping[p] || "🦊"} ${p}`;
-            if(p === currentUser) op.selected = true;
-            select.appendChild(op);
-        });
-    }
-
-    const exSelect = document.getElementById('existingProfileSelect');
-    exSelect.addEventListener('change', (e) => {
-        document.getElementById('loginBtn').disabled = (e.target.value === "");
-    });
-
-    document.getElementById('loginBtn').addEventListener('click', () => {
-        const name = document.getElementById('existingProfileSelect').value;
-        if(name) handleLoginSuccess(name);
-    });
-
-    document.getElementById('createProfileBtn').addEventListener('click', async () => {
-        const rawName = document.getElementById('newProfileName').value.trim();
-        if(!rawName) return alert("Indique un prénom valide !");
-        const name = rawName.charAt(0).toUpperCase() + rawName.slice(1);
-
-        if(participants.includes(name)) {
-            return alert("Ce profil existe déjà ! Sélectionne-le au-dessus.");
-        }
-
-        participants.push(name);
-        customEmojisMapping[name] = selectedEmoji;
-        
-        await saveTeamState();
-        handleLoginSuccess(name);
-    });
-
-    async function handleLoginSuccess(name) {
-        currentUser = name;
-        const userEmoji = customEmojisMapping[name] || "🦊";
-        
-        document.getElementById('sidebarUserName').innerText = name;
-        document.getElementById('sidebarUserEmoji').innerText = userEmoji;
-        document.getElementById('mobileUserName').innerText = name;
-        document.getElementById('welcomeScreen').style.display = 'none';
-
-        const sessionToken = Math.random().toString(36).substring(2);
-        localStorage.setItem(`session_${name}`, sessionToken);
-        await setDoc(doc(db, "sessions", name), { activeToken: sessionToken });
-
-        if (unsubscribeSession) unsubscribeSession();
-        unsubscribeSession = onSnapshot(doc(db, "sessions", name), (snap) => {
-            if(snap.exists() && snap.data().activeToken !== sessionToken) {
-                document.getElementById('sessionConflictScreen').style.display = 'flex';
-                if(unsubscribeMonth) unsubscribeMonth();
-                if(unsubscribeSession) unsubscribeSession();
-            }
-        });
-
-        updateTeamAccordion();
-        renderPlanning();
-        renderGalerie();
-    }
-
-    document.getElementById('conflictResetBtn').addEventListener('click', () => {
-        window.location.reload();
-    });
-
-    function handleLogout() {
-        currentUser = "";
-        if (unsubscribeSession) unsubscribeSession();
-        document.getElementById('welcomeScreen').style.display = 'flex';
-        document.getElementById('existingProfileSelect').value = "";
-        document.getElementById('loginBtn').disabled = true;
-        document.getElementById('sidebarUserName').innerText = "-";
-        document.getElementById('sidebarUserEmoji').innerText = "🦊";
-        document.getElementById('mobileUserName').innerText = "Profil";
-        updateTeamAccordion();
-        renderPlanning();
-    }
-    document.getElementById('logoutBtn').addEventListener('click', handleLogout);
-    document.getElementById('mbtn-logout').addEventListener('click', handleLogout);
-
-    const monthSelect = document.getElementById('monthSelect');
-    monthSelect.addEventListener('change', async (e) => {
-        currentMonth = e.target.value;
-        setupRealtimeListener();
-        await loadAllMonthsOverrides();
-    });
-
-    function switchPage(pageId, btnId, mbtnId) {
-        document.querySelectorAll('.page-section').forEach(p => p.classList.remove('active'));
-        document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-        document.querySelectorAll('.mobile-nav-btn').forEach(b => b.classList.remove('active'));
-
-        document.getElementById(pageId).classList.add('active');
-        if(document.getElementById(btnId)) document.getElementById(btnId).classList.add('active');
-        if(document.getElementById(mbtnId)) document.getElementById(mbtnId).classList.add('active');
-
-        if(pageId === 'page-galerie') renderGalerie();
-    }
-
-    document.getElementById('btn-aperçu').addEventListener('click', () => switchPage('page-aperçu', 'btn-aperçu', 'mbtn-aperçu'));
-    document.getElementById('mbtn-aperçu').addEventListener('click', () => switchPage('page-aperçu', 'btn-aperçu', 'mbtn-aperçu'));
-    document.getElementById('btn-galerie').addEventListener('click', () => switchPage('page-galerie', 'btn-galerie', 'mbtn-galerie'));
-    document.getElementById('mbtn-galerie').addEventListener('click', () => switchPage('page-galerie', 'btn-galerie', 'mbtn-galerie'));
-    document.getElementById('btn-stats').addEventListener('click', () => switchPage('page-stats', 'btn-stats', 'mbtn-stats'));
-    document.getElementById('mbtn-stats').addEventListener('click', () => switchPage('page-stats', 'btn-stats', 'mbtn-stats'));
-    document.getElementById('btn-vaisselle').addEventListener('click', () => switchPage('page-vaisselle', 'btn-vaisselle', 'mbtn-vaisselle'));
-    document.getElementById('mbtn-vaisselle').addEventListener('click', () => switchPage('page-vaisselle', 'btn-vaisselle', 'mbtn-vaisselle'));
-
-    setupRealtimeListener();
-    await loadAllMonthsOverrides();
 </script>
+
 </body>
 </html>

@@ -595,26 +595,48 @@
     }
 
     // ─── Reconstruit le planning COMPLET de façon séquentielle ───
-    // Principe : on calcule chaque jeudi dans l'ordre depuis le début de l'année.
-    // Chaque jour s'appuie sur le vrai résultat des jours précédents (pas un modulo).
-    // Les overrides manuels sont injectés tels quels et comptent dans l'historique.
+    // DEUX PASSES SÉPARÉES :
+    //   Passe 1 – jours PASSÉS : tous les participants (absents inclus) pour
+    //             préserver l'historique exact. Les jours passés sans override
+    //             sont automatiquement gelés dans allMonthsOverrides + Firestore.
+    //   Passe 2 – jours FUTURS : seulement les participants actifs (sans absents).
     function rebuildRolesCache() {
         rolesCache = {};
 
-        const activeParticipants = participants.filter(p => !absentGlobaux[p]);
-        if (activeParticipants.length === 0) return;
-
-        const baseOrder = ["Jeanne","Laura","Claribel","Yoann","Lucas","Mireille","Candice","Killian","Annaig","Ewen","Anthony","Clement","Clémentine","Benoit"];
-        const orderedActive = baseOrder.filter(n => activeParticipants.includes(n));
-        activeParticipants.forEach(p => { if (!orderedActive.includes(p)) orderedActive.push(p); });
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
 
         const totalThursdays = getTotalThursdaysInYear(2026);
-        const counts = {};
-        orderedActive.forEach(p => { counts[p] = { plat: 0, dessert: 0, remp: 0, total: 0 }; });
+        const baseOrder = ["Jeanne","Laura","Claribel","Yoann","Lucas","Mireille","Candice","Killian","Annaig","Ewen","Anthony","Clement","Clémentine","Benoit"];
+
+        // ── PASSE 1 : jours passés avec TOUS les participants ──────────────────
+        const allSorted = baseOrder.filter(n => participants.includes(n));
+        participants.forEach(p => { if (!allSorted.includes(p)) allSorted.push(p); });
+
+        const countsAll = {};
+        allSorted.forEach(p => { countsAll[p] = { plat: 0, dessert: 0, remp: 0, total: 0 }; });
+
+        function pickLeastFrom(pool, counts, roleKey, exclude) {
+            const available = pool.filter(p => !exclude.includes(p));
+            available.sort((a, b) => {
+                const dr = counts[a][roleKey] - counts[b][roleKey];
+                if (dr !== 0) return dr;
+                const dt = counts[a].total - counts[b].total;
+                if (dt !== 0) return dt;
+                return pool.indexOf(a) - pool.indexOf(b);
+            });
+            return available[0] || "Aucun";
+        }
+
+        const frozenUpdates = {}; // { monthId: { gIdx: roles } }
+        let lastPastIndex = -1;
 
         for (let i = 0; i < totalThursdays; i++) {
-            let result;
+            const thursdayDate = getThursdayDateFromGlobalIndex(i);
+            if (!thursdayDate || thursdayDate >= today) break; // on s'arrête au premier jour futur
+            lastPastIndex = i;
 
+            let result;
             if (allMonthsOverrides[i]) {
                 result = {
                     plat:    allMonthsOverrides[i].plat    || "Aucun",
@@ -622,29 +644,82 @@
                     remp:    allMonthsOverrides[i].remp    || "Aucun"
                 };
             } else {
-                function pickLeast(roleKey, exclude) {
-                    const available = orderedActive.filter(p => !exclude.includes(p));
-                    available.sort((a, b) => {
-                        const dr = counts[a][roleKey] - counts[b][roleKey];
-                        if (dr !== 0) return dr;
-                        const dt = counts[a].total - counts[b].total;
-                        if (dt !== 0) return dt;
-                        return orderedActive.indexOf(a) - orderedActive.indexOf(b);
-                    });
-                    return available[0] || "Aucun";
-                }
-                const plat    = pickLeast('plat',    []);
-                const dessert = pickLeast('dessert', [plat]);
-                const remp    = pickLeast('remp',    [plat, dessert]);
+                const plat    = pickLeastFrom(allSorted, countsAll, 'plat',    []);
+                const dessert = pickLeastFrom(allSorted, countsAll, 'dessert', [plat]);
+                const remp    = pickLeastFrom(allSorted, countsAll, 'remp',    [plat, dessert]);
+                result = { plat, dessert, remp };
+
+                // Geler dans allMonthsOverrides pour ne plus jamais être modifié
+                allMonthsOverrides[i] = { plat: result.plat, dessert: result.dessert, remp: result.remp };
+                const monthId = `${thursdayDate.getFullYear()}-${String(thursdayDate.getMonth() + 1).padStart(2, '0')}`;
+                if (!frozenUpdates[monthId]) frozenUpdates[monthId] = {};
+                frozenUpdates[monthId][i] = allMonthsOverrides[i];
+                if (monthId === currentMonth) overrides[i] = allMonthsOverrides[i];
+            }
+
+            rolesCache[i] = result;
+            if (countsAll[result.plat])    { countsAll[result.plat].plat++;    countsAll[result.plat].total++;    }
+            if (countsAll[result.dessert]) { countsAll[result.dessert].dessert++; countsAll[result.dessert].total++; }
+            if (countsAll[result.remp])    { countsAll[result.remp].remp++;    countsAll[result.remp].total++;    }
+        }
+
+        // Sauvegarder les gels en Firestore (asynchrone)
+        Object.entries(frozenUpdates).forEach(([monthId, newOvs]) => {
+            setDoc(doc(db, "planning", `mois_${monthId}`), { overrides: newOvs }, { merge: true });
+        });
+
+        // ── PASSE 2 : jours FUTURS avec seulement les participants ACTIFS ──────
+        const activeParticipants = participants.filter(p => !absentGlobaux[p]);
+        if (activeParticipants.length === 0) return;
+
+        const orderedActive = baseOrder.filter(n => activeParticipants.includes(n));
+        activeParticipants.forEach(p => { if (!orderedActive.includes(p)) orderedActive.push(p); });
+
+        // Initialiser les compteurs futurs depuis les comptes historiques des actifs
+        const countsFuture = {};
+        orderedActive.forEach(p => {
+            countsFuture[p] = {
+                plat:    countsAll[p] ? countsAll[p].plat    : 0,
+                dessert: countsAll[p] ? countsAll[p].dessert : 0,
+                remp:    countsAll[p] ? countsAll[p].remp    : 0,
+                total:   countsAll[p] ? countsAll[p].total   : 0
+            };
+        });
+
+        for (let i = lastPastIndex + 1; i < totalThursdays; i++) {
+            let result;
+            if (allMonthsOverrides[i]) {
+                result = {
+                    plat:    allMonthsOverrides[i].plat    || "Aucun",
+                    dessert: allMonthsOverrides[i].dessert || "Aucun",
+                    remp:    allMonthsOverrides[i].remp    || "Aucun"
+                };
+            } else {
+                const plat    = pickLeastFrom(orderedActive, countsFuture, 'plat',    []);
+                const dessert = pickLeastFrom(orderedActive, countsFuture, 'dessert', [plat]);
+                const remp    = pickLeastFrom(orderedActive, countsFuture, 'remp',    [plat, dessert]);
                 result = { plat, dessert, remp };
             }
 
             rolesCache[i] = result;
-
-            if (counts[result.plat])    { counts[result.plat].plat++;    counts[result.plat].total++;    }
-            if (counts[result.dessert]) { counts[result.dessert].dessert++; counts[result.dessert].total++; }
-            if (counts[result.remp])    { counts[result.remp].remp++;    counts[result.remp].total++;    }
+            if (countsFuture[result.plat])    { countsFuture[result.plat].plat++;    countsFuture[result.plat].total++;    }
+            if (countsFuture[result.dessert]) { countsFuture[result.dessert].dessert++; countsFuture[result.dessert].total++; }
+            if (countsFuture[result.remp])    { countsFuture[result.remp].remp++;    countsFuture[result.remp].total++;    }
         }
+    }
+
+    // Retourne la date réelle d'un jeudi depuis son globalIndex (dans l'année 2026)
+    function getThursdayDateFromGlobalIndex(targetIndex) {
+        let count = 0;
+        const d = new Date(2026, 0, 1);
+        while (d.getFullYear() === 2026) {
+            if (d.getDay() === 4) {
+                if (count === targetIndex) return new Date(d);
+                count++;
+            }
+            d.setDate(d.getDate() + 1);
+        }
+        return null;
     }
 
     function getTotalThursdaysInYear(year) {
@@ -921,50 +996,15 @@
                     setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
                 });
 
-                absentBtn.addEventListener('click', async () => {
+                absentBtn.addEventListener('click', () => {
                     const pName = participants[index];
-                    const wasAbsent = !!absentGlobaux[pName];
-                    if (wasAbsent) {
+                    if (absentGlobaux[pName]) {
                         delete absentGlobaux[pName];
                     } else {
                         absentGlobaux[pName] = true;
                     }
-
-                    // Avant de recalculer, on gèle tous les jours passés comme overrides
-                    // pour que les rôles historiques ne changent pas
-                    const today = new Date();
-                    today.setHours(0, 0, 0, 0);
-                    const allMonths = ["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
-                    const monthOverridesUpdates = {}; // { monthId: { overrides: {...} } }
-
-                    for (const m of allMonths) {
-                        const [y, mo] = m.split("-");
-                        const mIdx = parseInt(mo) - 1;
-                        const thursInM = getThursdaysInMonthWithGlobalIndex(parseInt(y), mIdx);
-                        for (const t of thursInM) {
-                            if (!isPastThursday(parseInt(y), mIdx, t.dayOfMonth)) continue;
-                            const gIdx = t.globalIndex;
-                            // Si pas déjà un override, on fige le rôle calculé actuel
-                            if (!allMonthsOverrides[gIdx]) {
-                                const current = rolesCache[gIdx] || getRolesForGlobalIndex(gIdx);
-                                if (current && current.plat && current.dessert && current.remp) {
-                                    allMonthsOverrides[gIdx] = { plat: current.plat, dessert: current.dessert, remp: current.remp };
-                                    if (!monthOverridesUpdates[m]) monthOverridesUpdates[m] = {};
-                                    monthOverridesUpdates[m][gIdx] = allMonthsOverrides[gIdx];
-                                    // Aussi mettre à jour overrides local si c'est le mois courant
-                                    if (m === currentMonth) overrides[gIdx] = allMonthsOverrides[gIdx];
-                                }
-                            }
-                        }
-                    }
-
-                    // Persister les overrides gelés dans Firestore pour chaque mois concerné
-                    const savePromises = Object.entries(monthOverridesUpdates).map(([m, newOvs]) => {
-                        return setDoc(doc(db, "planning", `mois_${m}`), { overrides: newOvs }, { merge: true });
-                    });
-                    await Promise.all(savePromises);
-
-                    await setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
+                    // rebuildRolesCache gèle automatiquement les jours passés avant de recalculer
+                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
                     rebuildRolesCache();
                     generatePlanningCards();
                 });
@@ -1138,10 +1178,13 @@
             card.className = `semaine-card sem-${(idx % 5) + 1}`;
             card.style.animationDelay = `${idx * 0.05}s`;
 
-            const activeForSelect = participants.filter(p => !absentGlobaux[p]);
-            let selectPlat    = activeForSelect.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
-            let selectDessert = activeForSelect.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
-            let selectRemp    = activeForSelect.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            // Pour les jours passés : tous les participants (absents inclus) pour que
+            // les noms historiques apparaissent bien dans le select.
+            // Pour les jours futurs : seulement les actifs.
+            const poolForSelect = isPast ? participants : participants.filter(p => !absentGlobaux[p]);
+            let selectPlat    = poolForSelect.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectDessert = poolForSelect.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
+            let selectRemp    = poolForSelect.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
 
             const platAbsent    = absentGlobaux[roles.plat]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
             const dessertAbsent = absentGlobaux[roles.dessert] ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';

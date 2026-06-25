@@ -657,8 +657,17 @@
                 <div class="stats-container" style="max-width:580px; margin:0 auto; text-align:center;">
                     <h3 style="margin-top:0; font-weight:800;">🎨 Devine le Dessin</h3>
                     <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Un joueur dessine, les autres devinent !</p>
-                    <div id="dessinWordBox" style="background:#0f172a; border:2px dashed #38bdf8; border-radius:14px; padding:14px 20px; margin-bottom:16px; font-size:1rem; color:#38bdf8; font-weight:800; display:none;">
-                        🤫 Mot secret : <span id="dessinWord" style="color:white;"></span>
+                    <div id="dessinWordBox" style="background:#0f172a; border:2px dashed #38bdf8; border-radius:14px; padding:14px 20px; margin-bottom:16px; font-size:1rem; color:#38bdf8; font-weight:800; display:none; position:relative;">
+                        <div style="display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:wrap;">
+                            <span>🤫 Mot secret : <span id="dessinWord" style="color:white;"></span></span>
+                            <button id="dessinToggleWord" onclick="(function(){
+                                const word = document.getElementById('dessinWord');
+                                const btn = document.getElementById('dessinToggleWord');
+                                const hidden = word.dataset.hidden === '1';
+                                if(hidden){ word.style.filter=''; word.dataset.hidden='0'; btn.textContent='🙈 Cacher'; }
+                                else { word.style.filter='blur(8px)'; word.dataset.hidden='1'; btn.textContent='👁️ Révéler'; }
+                            })()" style="background:#1e293b; border:1px solid #334155; color:#94a3b8; padding:5px 12px; border-radius:8px; font-size:0.8rem; font-weight:700; cursor:pointer; white-space:nowrap;">🙈 Cacher</button>
+                        </div>
                     </div>
                     <canvas id="dessinCanvas" width="520" height="320" style="border-radius:16px; border:1px solid #334155; background:white; cursor:crosshair; touch-action:none; max-width:100%;"></canvas>
                     <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px;">
@@ -2064,7 +2073,12 @@
 
         document.getElementById('dessinNewWord').addEventListener('click', () => {
             const word = words[Math.floor(Math.random() * words.length)];
-            document.getElementById('dessinWord').innerText = word;
+            const wordEl = document.getElementById('dessinWord');
+            const btn = document.getElementById('dessinToggleWord');
+            wordEl.innerText = word;
+            wordEl.style.filter = '';
+            wordEl.dataset.hidden = '0';
+            btn.textContent = '🙈 Cacher';
             document.getElementById('dessinWordBox').style.display = 'block';
             ctx.clearRect(0, 0, canvas.width, canvas.height);
         });

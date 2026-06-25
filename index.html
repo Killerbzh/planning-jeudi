@@ -315,11 +315,118 @@
             #statsTwoCol { grid-template-columns: 1fr !important; gap: 28px !important; }
         }
 
+        /* ─── ONGLET JEUX ─── */
+        .game-tab {
+            background: #1e293b; border: 1px solid var(--border-color); color: var(--sidebar-text);
+            padding: 10px 18px; border-radius: 12px; font-weight: 700; font-size: 0.88rem; cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        .game-tab:hover { background: #243249; color: white; }
+        .game-tab.active { background: rgba(56,189,248,0.15); border-color: #38bdf8; color: #38bdf8; }
+        .game-panel { display: none; animation: fadeInUp 0.3s ease; }
+        .game-panel.active { display: block; }
+
+        /* Memory */
+        .mem-card {
+            aspect-ratio: 1; background: #1e293b; border: 2px solid #334155; border-radius: 14px;
+            font-size: 1.7rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.25s cubic-bezier(0.34,1.56,0.64,1); user-select: none;
+        }
+        .mem-card:hover { border-color: #38bdf8; transform: scale(1.05); }
+        .mem-card.flipped { background: #0f172a; border-color: #38bdf8; }
+        .mem-card.matched { background: rgba(74,222,128,0.1); border-color: #4ade80; cursor: default; pointer-events: none; }
+
+        /* Morpion */
+        .morpion-cell {
+            aspect-ratio: 1; background: #1e293b; border: 2px solid #334155; border-radius: 14px;
+            font-size: 2rem; display: flex; align-items: center; justify-content: center;
+            cursor: pointer; transition: all 0.2s ease; user-select: none;
+        }
+        .morpion-cell:hover:not(.taken) { background: #243249; border-color: #38bdf8; }
+        .morpion-cell.taken { cursor: default; }
+        .morpion-cell.win-cell { background: rgba(74,222,128,0.15); border-color: #4ade80; }
+
+        /* Quiz */
+        .quiz-answer-btn {
+            background: #0f172a; border: 2px solid #334155; color: var(--text-main);
+            padding: 12px; border-radius: 14px; font-weight: 700; font-size: 0.9rem; cursor: pointer;
+            transition: all 0.2s ease; text-align: left;
+        }
+        .quiz-answer-btn:hover:not(:disabled) { border-color: #38bdf8; background: rgba(56,189,248,0.08); }
+        .quiz-answer-btn.correct { border-color: #4ade80; background: rgba(74,222,128,0.15); color: #4ade80; }
+        .quiz-answer-btn.wrong { border-color: #f43f5e; background: rgba(244,63,94,0.1); color: #f43f5e; }
+
+        /* Puissance 4 */
+        .p4-cell {
+            width: 56px; height: 56px; border-radius: 50%; background: #0f172a;
+            border: 2px solid #334155; cursor: pointer; transition: all 0.15s ease; display: flex; align-items: center; justify-content: center;
+        }
+        .p4-cell:hover { border-color: #64748b; }
+        .p4-cell.yellow { background: #facc15; border-color: #eab308; box-shadow: 0 0 12px rgba(250,204,21,0.4); cursor: default; }
+        .p4-cell.red { background: #f43f5e; border-color: #e11d48; box-shadow: 0 0 12px rgba(244,63,94,0.4); cursor: default; }
+        .p4-cell.win-cell { box-shadow: 0 0 20px 4px rgba(255,255,255,0.4); }
+        @media (max-width: 768px) {
+            .p4-cell { width: 40px; height: 40px; }
+        }
+
+        /* Desktop uniquement : masquer la nav mobile, déplier l'accordéon */
         @media (min-width: 769px) {
             .mobile-nav { display: none; }
             .accordion-header { pointer-events: none; }
             .accordion-header span:last-child { display: none; }
-            .accordion-content { display: block; border: none; padding: 0; box-shadow: none; background: transparent; }
+            .accordion-content { display: block !important; border: none; padding: 0; box-shadow: none; background: transparent; }
+        }
+
+        /* ─── ERGONOMIE JEUX ─── */
+        /* Tabs de jeux scrollables sur mobile */
+        #gameTabsBar {
+            display: flex;
+            gap: 10px;
+            flex-wrap: nowrap;
+            overflow-x: auto;
+            padding-bottom: 6px;
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+            margin-bottom: 24px;
+        }
+        #gameTabsBar::-webkit-scrollbar { display: none; }
+        .game-tab {
+            flex-shrink: 0;
+        }
+
+        /* Panels de jeu : centrage correct et padding */
+        .game-panel.active {
+            display: flex;
+            justify-content: center;
+        }
+        .game-panel.active > .stats-container {
+            width: 100%;
+        }
+
+        /* Memory board responsive */
+        #memBoard {
+            max-width: 420px;
+            width: 100%;
+        }
+
+        @media (max-width: 768px) {
+            /* Jeux : panel pleine largeur */
+            .game-panel.active {
+                display: block;
+            }
+            .game-panel.active > .stats-container {
+                max-width: 100% !important;
+                margin: 0 !important;
+                padding: 16px !important;
+            }
+            /* Memory cards plus petites */
+            .mem-card { font-size: 1.3rem; border-radius: 10px; }
+            /* Puissance 4 centré */
+            #p4Board { gap: 4px !important; padding: 10px !important; }
+            /* Quiz réponses en colonne sur petit écran */
+            #quizAnswers { grid-template-columns: 1fr !important; }
+            /* Canvas dessin pleine largeur */
+            #dessinCanvas { width: 100% !important; height: auto !important; }
         }
     </style>
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght=600;700;800&display=swap" rel="stylesheet">
@@ -379,6 +486,7 @@
         <button class="nav-btn" id="btn-galerie">📸 <span>Galerie Photos</span></button>
         <button class="nav-btn" id="btn-stats">🏆 <span>Classement</span></button>
         <button class="nav-btn" id="btn-vaisselle">🧼 <span>Vaisselle</span></button>
+        <button class="nav-btn" id="btn-jeux">🎮 <span>Jeux</span></button>
     </div>
 
     <!-- BARRE NAV BASSE MOBILE -->
@@ -387,6 +495,7 @@
         <button class="mobile-nav-btn" id="mbtn-galerie"><span>📸</span><span>Galerie</span></button>
         <button class="mobile-nav-btn" id="mbtn-stats"><span>🏆</span><span>Classement</span></button>
         <button class="mobile-nav-btn" id="mbtn-vaisselle"><span>🧼</span><span>Vaisselle</span></button>
+        <button class="mobile-nav-btn" id="mbtn-jeux"><span>🎮</span><span>Jeux</span></button>
         <button class="mobile-nav-btn" id="mbtn-logout"><span>⚙️</span><span id="mobileUserName">Profil</span></button>
     </div>
 
@@ -469,7 +578,102 @@
                 <div id="resultatVaisselle" style="margin-top: 25px; font-weight: 800; color: #38bdf8; font-size: 1.1rem; line-height: 1.5;"></div>
             </div>
         </div>
-    </div>
+
+        <!-- ONGLET 5 : JEUX -->
+        <div id="page-jeux" class="page-section">
+            <h2 style="font-weight:800; font-size:1.25rem; margin:0 0 4px 0; color:white;">🎮 Mini-Jeux</h2>
+            <p style="color:var(--text-muted); margin-bottom:24px; margin-top:0; font-size:0.85rem;">Des jeux pour s'occuper entre deux plats 🍽️</p>
+
+            <!-- Sélecteur de jeu -->
+            <div id="gameTabsBar">
+                <button class="game-tab active" data-game="memory">🃏 Memory</button>
+                <button class="game-tab" data-game="morpion">⭕ Morpion</button>
+                <button class="game-tab" data-game="quiz">🧠 Quiz Culture G</button>
+                <button class="game-tab" data-game="puissance4">🟡 Puissance 4</button>
+                <button class="game-tab" data-game="dessin">🎨 Devine le Dessin</button>
+            </div>
+
+            <!-- ═══ MEMORY ═══ -->
+            <div class="game-panel active" id="game-memory">
+                <div class="stats-container" style="max-width:600px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">🃏 Memory</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Retrouvez toutes les paires ! 🕐 <span id="memTimer">00:00</span></p>
+                    <div style="display:flex; justify-content:center; gap:12px; margin-bottom:20px; flex-wrap:wrap;">
+                        <button class="primary-btn" id="memStartBtn" style="width:auto; padding:10px 20px;">Nouvelle partie</button>
+                        <div style="background:#0f172a; border:1px solid #334155; padding:10px 18px; border-radius:12px; font-weight:800; color:#38bdf8; font-size:0.95rem;">
+                            🔄 Tentatives : <span id="memMoves">0</span>
+                        </div>
+                    </div>
+                    <div id="memBoard" style="display:grid; grid-template-columns:repeat(4,1fr); gap:10px; max-width:400px; margin:0 auto;"></div>
+                    <div id="memResult" style="margin-top:18px; font-weight:800; color:#4ade80; font-size:1.1rem;"></div>
+                </div>
+            </div>
+
+            <!-- ═══ MORPION ═══ -->
+            <div class="game-panel" id="game-morpion">
+                <div class="stats-container" style="max-width:420px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">⭕ Morpion</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Joueur <span id="morpionPlayer" style="color:#38bdf8; font-weight:800;">❌</span> — <span id="morpionStatus">À toi de jouer !</span></p>
+                    <div id="morpionBoard" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:16px auto;"></div>
+                    <button class="primary-btn" id="morpionReset" style="width:auto; padding:10px 24px; margin-top:12px;">🔄 Rejouer</button>
+                </div>
+            </div>
+
+            <!-- ═══ QUIZ ═══ -->
+            <div class="game-panel" id="game-quiz">
+                <div class="stats-container" style="max-width:560px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">🧠 Quiz Culture Générale</h3>
+                    <div style="display:flex; justify-content:center; gap:16px; margin-bottom:18px; flex-wrap:wrap;">
+                        <div style="background:#0f172a; border:1px solid #334155; padding:8px 16px; border-radius:12px; font-weight:800; color:#facc15; font-size:0.9rem;">⭐ Score : <span id="quizScore">0</span></div>
+                        <div style="background:#0f172a; border:1px solid #334155; padding:8px 16px; border-radius:12px; font-weight:800; color:#94a3b8; font-size:0.9rem;">❓ Q.<span id="quizNum">1</span>/10</div>
+                    </div>
+                    <div id="quizCard" style="background:#0f172a; border:1px solid #334155; border-radius:18px; padding:24px; margin-bottom:18px; min-height:80px; display:flex; align-items:center; justify-content:center;">
+                        <p id="quizQuestion" style="font-weight:700; font-size:1.05rem; margin:0; color:white; line-height:1.5;"></p>
+                    </div>
+                    <div id="quizAnswers" style="display:grid; grid-template-columns:1fr 1fr; gap:10px;"></div>
+                    <div id="quizFeedback" style="margin-top:16px; font-weight:800; font-size:1rem; min-height:24px;"></div>
+                    <button class="primary-btn" id="quizNextBtn" style="width:auto; padding:10px 24px; margin-top:14px; display:none;">Question suivante →</button>
+                    <div id="quizResult" style="display:none; margin-top:18px;">
+                        <div style="font-size:2.5rem;">🎉</div>
+                        <div id="quizFinalScore" style="font-size:1.4rem; font-weight:800; color:#facc15; margin-top:8px;"></div>
+                        <button class="primary-btn" id="quizRestartBtn" style="width:auto; padding:10px 24px; margin-top:14px;">Rejouer</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PUISSANCE 4 ═══ -->
+            <div class="game-panel" id="game-puissance4">
+                <div class="stats-container" style="max-width:560px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">🟡 Puissance 4</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Joueur <span id="p4Player" style="font-weight:800; color:#facc15;">🟡</span> — <span id="p4Status">À toi !</span></p>
+                    <div id="p4Board" style="display:inline-grid; grid-template-columns:repeat(7,1fr); gap:6px; margin:16px auto; background:#1e293b; padding:14px; border-radius:18px; border:1px solid #334155;"></div>
+                    <br>
+                    <button class="primary-btn" id="p4Reset" style="width:auto; padding:10px 24px; margin-top:4px;">🔄 Rejouer</button>
+                </div>
+            </div>
+
+            <!-- ═══ DEVINE LE DESSIN ═══ -->
+            <div class="game-panel" id="game-dessin">
+                <div class="stats-container" style="max-width:580px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">🎨 Devine le Dessin</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Un joueur dessine, les autres devinent !</p>
+                    <div id="dessinWordBox" style="background:#0f172a; border:2px dashed #38bdf8; border-radius:14px; padding:14px 20px; margin-bottom:16px; font-size:1rem; color:#38bdf8; font-weight:800; display:none;">
+                        🤫 Mot secret : <span id="dessinWord" style="color:white;"></span>
+                    </div>
+                    <canvas id="dessinCanvas" width="520" height="320" style="border-radius:16px; border:1px solid #334155; background:white; cursor:crosshair; touch-action:none; max-width:100%;"></canvas>
+                    <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap; margin-top:14px;">
+                        <button class="primary-btn" id="dessinNewWord" style="width:auto; padding:9px 18px;">🔀 Nouveau mot</button>
+                        <button class="primary-btn" id="dessinClear" style="width:auto; padding:9px 18px; background:#334155;">🗑️ Effacer</button>
+                        <input type="color" id="dessinColor" value="#e11d48" title="Couleur" style="width:44px; height:44px; border:none; border-radius:10px; cursor:pointer; background:none; padding:0;">
+                        <select id="dessinSize" style="background:#0f172a; color:white; border:1px solid #334155; border-radius:10px; padding:8px 12px; font-weight:700; outline:none;">
+                            <option value="3">Fin</option>
+                            <option value="7" selected>Moyen</option>
+                            <option value="16">Épais</option>
+                        </select>
+                    </div>
+                </div>
+            </div>
+    </div><!-- /main-content -->
 
 <!-- Lightbox -->
 <div class="lightbox-overlay" id="lightboxOverlay">
@@ -789,10 +993,11 @@
         if(pageId === 'stats') generateStats();
         if(pageId === 'galerie') generateGalerie();
         if(pageId === 'vaisselle') initVaissellePage();
+        if(pageId === 'jeux') initJeux();
     }
 
     // Assignation des événements de navigation
-    const pages = ['aperçu', 'galerie', 'stats', 'vaisselle'];
+    const pages = ['aperçu', 'galerie', 'stats', 'vaisselle', 'jeux'];
     pages.forEach(page => {
         document.getElementById(`btn-${page}`).addEventListener('click', () => switchPage(page));
         document.getElementById(`mbtn-${page}`).addEventListener('click', () => switchPage(page));
@@ -1497,7 +1702,380 @@
         }, 2000);
     });
 
-    // ─── Lightbox ───
+    // ═══════════════════════════════════════════
+    //  🎮  ONGLET JEUX
+    // ═══════════════════════════════════════════
+    let jeuxInited = false;
+
+    function initJeux() {
+        if (jeuxInited) return;
+        jeuxInited = true;
+
+        // ── Sélecteur de jeux ──
+        document.querySelectorAll('.game-tab').forEach(tab => {
+            tab.addEventListener('click', () => {
+                document.querySelectorAll('.game-tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.game-panel').forEach(p => p.classList.remove('active'));
+                tab.classList.add('active');
+                document.getElementById(`game-${tab.dataset.game}`).classList.add('active');
+            });
+        });
+
+        initMemory();
+        initMorpion();
+        initQuiz();
+        initPuissance4();
+        initDessin();
+    }
+
+    // ════════════════════════════════
+    //  🃏 MEMORY
+    // ════════════════════════════════
+    function initMemory() {
+        const emojis = ['🍕','🍔','🍣','🌮','🧁','🍩','🍓','🥑'];
+        let cards = [], flipped = [], matched = 0, moves = 0, timerInterval = null, seconds = 0;
+
+        function formatTime(s) { return `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            seconds = 0;
+            document.getElementById('memTimer').innerText = '00:00';
+            timerInterval = setInterval(() => {
+                seconds++;
+                document.getElementById('memTimer').innerText = formatTime(seconds);
+            }, 1000);
+        }
+
+        function startGame() {
+            const board = document.getElementById('memBoard');
+            board.innerHTML = '';
+            document.getElementById('memResult').innerText = '';
+            document.getElementById('memMoves').innerText = '0';
+            flipped = []; matched = 0; moves = 0;
+            cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
+            startTimer();
+
+            cards.forEach((emoji, i) => {
+                const card = document.createElement('div');
+                card.className = 'mem-card';
+                card.dataset.index = i;
+                card.dataset.emoji = emoji;
+                card.innerText = '❓';
+                card.addEventListener('click', () => flipCard(card));
+                board.appendChild(card);
+            });
+        }
+
+        function flipCard(card) {
+            if (card.classList.contains('flipped') || card.classList.contains('matched') || flipped.length === 2) return;
+            card.classList.add('flipped');
+            card.innerText = card.dataset.emoji;
+            flipped.push(card);
+            if (flipped.length === 2) {
+                moves++;
+                document.getElementById('memMoves').innerText = moves;
+                if (flipped[0].dataset.emoji === flipped[1].dataset.emoji) {
+                    flipped.forEach(c => c.classList.add('matched'));
+                    flipped = [];
+                    matched++;
+                    if (matched === emojis.length) {
+                        clearInterval(timerInterval);
+                        document.getElementById('memResult').innerText = `🏆 Bravo ! ${moves} tentatives en ${formatTime(seconds)} !`;
+                    }
+                } else {
+                    setTimeout(() => {
+                        flipped.forEach(c => { c.classList.remove('flipped'); c.innerText = '❓'; });
+                        flipped = [];
+                    }, 900);
+                }
+            }
+        }
+
+        document.getElementById('memStartBtn').addEventListener('click', startGame);
+        startGame();
+    }
+
+    // ════════════════════════════════
+    //  ⭕ MORPION
+    // ════════════════════════════════
+    function initMorpion() {
+        let board = Array(9).fill(null), currentP = 'X', gameOver = false;
+        const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+        function checkWin() {
+            for (const [a,b,c] of wins) {
+                if (board[a] && board[a] === board[b] && board[a] === board[c]) return [a,b,c];
+            }
+            return null;
+        }
+
+        function renderBoard() {
+            const container = document.getElementById('morpionBoard');
+            container.innerHTML = '';
+            board.forEach((val, i) => {
+                const cell = document.createElement('div');
+                cell.className = 'morpion-cell' + (val ? ' taken' : '');
+                cell.innerText = val === 'X' ? '❌' : val === 'O' ? '⭕' : '';
+                cell.addEventListener('click', () => play(i));
+                container.appendChild(cell);
+            });
+        }
+
+        function play(i) {
+            if (gameOver || board[i]) return;
+            board[i] = currentP;
+            const winCombo = checkWin();
+            if (winCombo) {
+                gameOver = true;
+                renderBoard();
+                winCombo.forEach(idx => document.getElementById('morpionBoard').children[idx].classList.add('win-cell'));
+                document.getElementById('morpionStatus').innerText = `Victoire de ${currentP === 'X' ? '❌' : '⭕'} ! 🎉`;
+            } else if (board.every(v => v)) {
+                gameOver = true;
+                renderBoard();
+                document.getElementById('morpionStatus').innerText = 'Match nul ! 🤝';
+            } else {
+                currentP = currentP === 'X' ? 'O' : 'X';
+                document.getElementById('morpionPlayer').innerText = currentP === 'X' ? '❌' : '⭕';
+                document.getElementById('morpionStatus').innerText = 'À toi de jouer !';
+                renderBoard();
+            }
+        }
+
+        function reset() {
+            board = Array(9).fill(null); currentP = 'X'; gameOver = false;
+            document.getElementById('morpionPlayer').innerText = '❌';
+            document.getElementById('morpionStatus').innerText = 'À toi de jouer !';
+            renderBoard();
+        }
+
+        document.getElementById('morpionReset').addEventListener('click', reset);
+        renderBoard();
+    }
+
+    // ════════════════════════════════
+    //  🧠 QUIZ
+    // ════════════════════════════════
+    function initQuiz() {
+        const questions = [
+            { q:"Quelle est la capitale de l'Australie ?", answers:["Sydney","Melbourne","Canberra","Brisbane"], correct:2 },
+            { q:"Combien d'os compte le corps humain adulte ?", answers:["206","186","230","196"], correct:0 },
+            { q:"Quel peintre a réalisé 'La Nuit Étoilée' ?", answers:["Monet","Van Gogh","Picasso","Rembrandt"], correct:1 },
+            { q:"En quelle année a eu lieu la Révolution française ?", answers:["1789","1776","1804","1812"], correct:0 },
+            { q:"Quelle est la planète la plus grande du système solaire ?", answers:["Saturne","Uranus","Neptune","Jupiter"], correct:3 },
+            { q:"Qui a écrit 'Les Misérables' ?", answers:["Balzac","Zola","Victor Hugo","Flaubert"], correct:2 },
+            { q:"Combien de joueurs compose une équipe de football ?", answers:["10","11","12","9"], correct:1 },
+            { q:"Quelle est la monnaie officielle du Japon ?", answers:["Won","Yuan","Yen","Ringgit"], correct:2 },
+            { q:"Quel est le pays le plus grand du monde en superficie ?", answers:["Canada","Chine","USA","Russie"], correct:3 },
+            { q:"Combien de côtés a un hexagone ?", answers:["5","7","6","8"], correct:2 },
+        ];
+        let shuffled = [], qIdx = 0, score = 0, answered = false;
+
+        function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
+
+        function startQuiz() {
+            shuffled = shuffle(questions);
+            qIdx = 0; score = 0; answered = false;
+            document.getElementById('quizResult').style.display = 'none';
+            document.getElementById('quizNextBtn').style.display = 'none';
+            document.getElementById('quizFeedback').innerText = '';
+            showQuestion();
+        }
+
+        function showQuestion() {
+            const q = shuffled[qIdx];
+            document.getElementById('quizNum').innerText = qIdx + 1;
+            document.getElementById('quizScore').innerText = score;
+            document.getElementById('quizQuestion').innerText = q.q;
+            document.getElementById('quizFeedback').innerText = '';
+            document.getElementById('quizNextBtn').style.display = 'none';
+            answered = false;
+
+            const container = document.getElementById('quizAnswers');
+            container.innerHTML = '';
+            q.answers.forEach((ans, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'quiz-answer-btn';
+                btn.innerText = ans;
+                btn.addEventListener('click', () => answer(i, q.correct));
+                container.appendChild(btn);
+            });
+        }
+
+        function answer(chosen, correct) {
+            if (answered) return;
+            answered = true;
+            const btns = document.querySelectorAll('.quiz-answer-btn');
+            btns.forEach(b => b.disabled = true);
+            btns[correct].classList.add('correct');
+            if (chosen === correct) {
+                score++;
+                document.getElementById('quizFeedback').innerHTML = '<span style="color:#4ade80">✅ Bonne réponse !</span>';
+            } else {
+                btns[chosen].classList.add('wrong');
+                document.getElementById('quizFeedback').innerHTML = '<span style="color:#f43f5e">❌ Raté !</span>';
+            }
+            document.getElementById('quizScore').innerText = score;
+
+            if (qIdx < shuffled.length - 1) {
+                document.getElementById('quizNextBtn').style.display = 'inline-block';
+            } else {
+                setTimeout(() => {
+                    document.getElementById('quizResult').style.display = 'block';
+                    document.getElementById('quizAnswers').innerHTML = '';
+                    document.getElementById('quizFeedback').innerText = '';
+                    const medals = score >= 9 ? '🥇' : score >= 6 ? '🥈' : score >= 4 ? '🥉' : '😅';
+                    document.getElementById('quizFinalScore').innerText = `${medals} ${score} / ${shuffled.length}`;
+                }, 1000);
+            }
+        }
+
+        document.getElementById('quizNextBtn').addEventListener('click', () => { qIdx++; showQuestion(); });
+        document.getElementById('quizRestartBtn').addEventListener('click', startQuiz);
+        startQuiz();
+    }
+
+    // ════════════════════════════════
+    //  🟡 PUISSANCE 4
+    // ════════════════════════════════
+    function initPuissance4() {
+        const COLS = 7, ROWS = 6;
+        let grid = [], currentP = 1, gameOver = false;
+
+        function initGrid() {
+            grid = Array.from({length: ROWS}, () => Array(COLS).fill(0));
+            currentP = 1; gameOver = false;
+            document.getElementById('p4Player').innerText = '🟡';
+            document.getElementById('p4Status').innerText = 'À toi !';
+            render();
+        }
+
+        function render() {
+            const board = document.getElementById('p4Board');
+            board.innerHTML = '';
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'p4-cell';
+                    if (grid[r][c] === 1) cell.classList.add('yellow');
+                    if (grid[r][c] === 2) cell.classList.add('red');
+                    cell.dataset.col = c;
+                    cell.addEventListener('click', () => drop(c));
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        function drop(col) {
+            if (gameOver) return;
+            let row = -1;
+            for (let r = ROWS - 1; r >= 0; r--) {
+                if (!grid[r][col]) { row = r; break; }
+            }
+            if (row === -1) return;
+            grid[row][col] = currentP;
+            const win = checkWin4(row, col);
+            if (win) {
+                gameOver = true;
+                render();
+                win.forEach(([r, c]) => {
+                    const cells = document.getElementById('p4Board').children;
+                    cells[r * COLS + c].classList.add('win-cell');
+                });
+                document.getElementById('p4Status').innerText = `Victoire de ${currentP === 1 ? '🟡' : '🔴'} ! 🎉`;
+            } else if (grid[0].every(v => v)) {
+                render();
+                document.getElementById('p4Status').innerText = 'Match nul ! 🤝';
+            } else {
+                currentP = currentP === 1 ? 2 : 1;
+                document.getElementById('p4Player').innerText = currentP === 1 ? '🟡' : '🔴';
+                render();
+            }
+        }
+
+        function checkWin4(row, col) {
+            const p = grid[row][col];
+            const dirs = [[0,1],[1,0],[1,1],[1,-1]];
+            for (const [dr, dc] of dirs) {
+                let cells = [[row, col]];
+                for (let d of [-1, 1]) {
+                    let r = row + d*dr, c = col + d*dc;
+                    while (r>=0 && r<ROWS && c>=0 && c<COLS && grid[r][c]===p) {
+                        cells.push([r,c]); r+=d*dr; c+=d*dc;
+                    }
+                }
+                if (cells.length >= 4) return cells;
+            }
+            return null;
+        }
+
+        document.getElementById('p4Reset').addEventListener('click', initGrid);
+        initGrid();
+    }
+
+    // ════════════════════════════════
+    //  🎨 DEVINE LE DESSIN
+    // ════════════════════════════════
+    function initDessin() {
+        const words = ["Chien","Pizza","Soleil","Voiture","Banane","Château","Guitare","Montagne","Ordinateur","Baleine","Fusée","Baguette","Escargot","Dinosaure","Astronaute","Croissant","Pieuvre","Girafe","Tramway","Champignon","Hibou","Bouteille","Poulpe","Cactus","Phare"];
+        const canvas = document.getElementById('dessinCanvas');
+        const ctx = canvas.getContext('2d');
+        let drawing = false, lastX, lastY;
+
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const src = e.touches ? e.touches[0] : e;
+            return [(src.clientX - rect.left) * scaleX, (src.clientY - rect.top) * scaleY];
+        }
+
+        canvas.addEventListener('mousedown', e => { drawing = true; [lastX, lastY] = getPos(e); });
+        canvas.addEventListener('mousemove', e => {
+            if (!drawing) return;
+            const [x, y] = getPos(e);
+            ctx.strokeStyle = document.getElementById('dessinColor').value;
+            ctx.lineWidth = parseInt(document.getElementById('dessinSize').value);
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            [lastX, lastY] = [x, y];
+        });
+        canvas.addEventListener('mouseup', () => drawing = false);
+        canvas.addEventListener('mouseleave', () => drawing = false);
+
+        canvas.addEventListener('touchstart', e => { e.preventDefault(); drawing = true; [lastX, lastY] = getPos(e); }, {passive:false});
+        canvas.addEventListener('touchmove', e => {
+            e.preventDefault();
+            if (!drawing) return;
+            const [x, y] = getPos(e);
+            ctx.strokeStyle = document.getElementById('dessinColor').value;
+            ctx.lineWidth = parseInt(document.getElementById('dessinSize').value);
+            ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+            ctx.beginPath(); ctx.moveTo(lastX, lastY); ctx.lineTo(x, y); ctx.stroke();
+            [lastX, lastY] = [x, y];
+        }, {passive:false});
+        canvas.addEventListener('touchend', () => drawing = false);
+
+        document.getElementById('dessinClear').addEventListener('click', () => {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        document.getElementById('dessinNewWord').addEventListener('click', () => {
+            const word = words[Math.floor(Math.random() * words.length)];
+            document.getElementById('dessinWord').innerText = word;
+            document.getElementById('dessinWordBox').style.display = 'block';
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        });
+
+        // Premier mot
+        const firstWord = words[Math.floor(Math.random() * words.length)];
+        document.getElementById('dessinWord').innerText = firstWord;
+        document.getElementById('dessinWordBox').style.display = 'block';
+    }
+
+
     function openLightbox(src) {
         const overlay = document.getElementById('lightboxOverlay');
         const img = document.getElementById('lightboxImg');

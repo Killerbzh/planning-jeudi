@@ -811,6 +811,7 @@
     let absentGlobaux = {};
     let allMonthsOverrides = {}; // overrides manuels de tous les mois
     let rolesCache = {};         // planning complet calculé séquentiellement
+    let rolesCacheReady = false; // true seulement après le premier calcul complet du mois courant
     function getDefaultCurrentMonth() {
         const availableMonths = ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"];
         const now = new Date();
@@ -904,7 +905,7 @@
 
     // ─── Charge les overrides manuels depuis Firestore (tous les mois) ───
     async function loadAllMonthsOverrides() {
-        const allMonths = ["2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
+        const allMonths = ["2026-01","2026-02","2026-03","2026-04","2026-05","2026-06","2026-07","2026-08","2026-09","2026-10","2026-11","2026-12"];
         allMonthsOverrides = {};
         for (const m of allMonths) {
             try {
@@ -1287,7 +1288,12 @@
             initInputs();
         }
         
-        if(currentUser) {
+        // On ne recalcule/affiche que si le planning du mois a déjà été
+        // entièrement chargé une première fois (évite l'affichage transitoire
+        // de mauvaises personnes juste après un rafraîchissement de page).
+        if (rolesCacheReady) rebuildRolesCache();
+
+        if(currentUser && rolesCacheReady) {
             generatePlanningCards();
             if (document.getElementById('page-stats').classList.contains('active')) generateStats();
             if (document.getElementById('page-galerie').classList.contains('active')) generateGalerie();
@@ -1401,6 +1407,7 @@
             }
             // Recharge l'historique complet pour que le calcul équitable soit exact
             await loadAllMonthsOverrides();
+            rolesCacheReady = true;
             if(currentUser) {
                 generatePlanningCards();
                 if (document.getElementById('page-stats').classList.contains('active')) generateStats();

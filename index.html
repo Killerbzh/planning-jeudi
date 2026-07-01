@@ -1470,11 +1470,9 @@
     }
 
     function addPhotoLink(globalIndex, type) {
-        const roles = getRolesForGlobalIndex(globalIndex);
-        const chefConcerne = type === 'plat' ? roles.plat : roles.dessert;
-
-        if (currentUser !== chefConcerne) {
-            return alert(`⛔ Seul(e) ${chefConcerne} peut ajouter ou modifier la photo de son ${type === 'plat' ? 'plat' : 'dessert'} !`);
+        const isSuperAdmin = (currentUser && currentUser.toLowerCase() === "lucas");
+        if (!isSuperAdmin) {
+            return alert("⛔ Seul Lucas peut ajouter ou modifier une photo !");
         }
 
         if (!thursdaysData[globalIndex]) thursdaysData[globalIndex] = {};

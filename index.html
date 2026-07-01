@@ -369,6 +369,49 @@
             .p4-cell { width: 40px; height: 40px; }
         }
 
+        /* Effet de victoire (ambiance) */
+        @keyframes winPulse {
+            0%, 100% { transform: scale(1); text-shadow: 0 0 0 rgba(74,222,128,0); }
+            50% { transform: scale(1.06); text-shadow: 0 0 18px rgba(74,222,128,0.6); }
+        }
+        .win-flash { animation: winPulse 0.9s ease-in-out 2; color: #4ade80 !important; }
+
+        /* Pendu */
+        .pendu-stage-box {
+            font-size: 3.2rem; line-height: 1; margin: 6px auto 14px auto; min-height: 70px;
+            display: flex; align-items: center; justify-content: center; letter-spacing: 4px;
+        }
+        .pendu-word {
+            font-size: 1.7rem; font-weight: 800; letter-spacing: 8px; margin: 10px 0 18px 0; color: white;
+            word-break: break-all;
+        }
+        .pendu-keyboard { display: grid; grid-template-columns: repeat(9, 1fr); gap: 6px; max-width: 460px; margin: 0 auto; }
+        .pendu-key {
+            background: #1e293b; border: 1px solid #334155; color: white; border-radius: 8px;
+            padding: 9px 0; font-weight: 800; font-size: 0.85rem; cursor: pointer; transition: all 0.15s ease;
+        }
+        .pendu-key:hover:not(:disabled) { border-color: #38bdf8; background: rgba(56,189,248,0.12); }
+        .pendu-key:disabled { cursor: default; opacity: 0.35; }
+        .pendu-key.good { background: rgba(74,222,128,0.2); border-color: #4ade80; color: #4ade80; }
+        .pendu-key.bad { background: rgba(244,63,94,0.15); border-color: #f43f5e; color: #f43f5e; opacity: 0.6; }
+        .pendu-lives { font-size: 1.1rem; letter-spacing: 3px; margin-bottom: 6px; }
+        @media (max-width: 480px) {
+            .pendu-keyboard { grid-template-columns: repeat(7, 1fr); }
+            .pendu-word { font-size: 1.3rem; letter-spacing: 5px; }
+        }
+
+        /* Classement des jeux */
+        .leaderboard-table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+        .leaderboard-table th {
+            text-align: left; font-size: 0.7rem; text-transform: uppercase; color: var(--text-muted);
+            padding: 8px 10px; border-bottom: 1px solid var(--border-color); letter-spacing: 0.5px;
+        }
+        .leaderboard-table td { padding: 10px; border-bottom: 1px solid rgba(255,255,255,0.04); font-weight: 700; }
+        .leaderboard-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .lb-rank { font-weight: 800; color: var(--text-muted); width: 30px; }
+        .lb-total { color: #38bdf8; font-weight: 800; }
+        .lb-empty { text-align: center; color: var(--text-muted); padding: 20px; font-size: 0.85rem; }
+
         /* Desktop uniquement : masquer la nav mobile, déplier l'accordéon */
         @media (min-width: 769px) {
             .mobile-nav { display: none; }
@@ -591,6 +634,8 @@
                 <button class="game-tab" data-game="quiz">🧠 Quiz Culture G</button>
                 <button class="game-tab" data-game="puissance4">🟡 Puissance 4</button>
                 <button class="game-tab" data-game="dessin">🎨 Devine le Dessin</button>
+                <button class="game-tab" data-game="pendu">🔤 Pendu</button>
+                <button class="game-tab" data-game="classement">🏆 Classement</button>
             </div>
 
             <!-- ═══ MEMORY ═══ -->
@@ -623,6 +668,7 @@
             <div class="game-panel" id="game-quiz">
                 <div class="stats-container" style="max-width:560px; margin:0 auto; text-align:center;">
                     <h3 style="margin-top:0; font-weight:800;">🧠 Quiz Culture Générale</h3>
+                    <p style="color:var(--text-muted); font-size:0.8rem; margin-top:-6px; margin-bottom:14px;">🌟 8/10 ou plus = 1 point au classement</p>
                     <div style="display:flex; justify-content:center; gap:16px; margin-bottom:18px; flex-wrap:wrap;">
                         <div style="background:#0f172a; border:1px solid #334155; padding:8px 16px; border-radius:12px; font-weight:800; color:#facc15; font-size:0.9rem;">⭐ Score : <span id="quizScore">0</span></div>
                         <div style="background:#0f172a; border:1px solid #334155; padding:8px 16px; border-radius:12px; font-weight:800; color:#94a3b8; font-size:0.9rem;">❓ Q.<span id="quizNum">1</span>/10</div>
@@ -679,6 +725,43 @@
                             <option value="7" selected>Moyen</option>
                             <option value="16">Épais</option>
                         </select>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ PENDU ═══ -->
+            <div class="game-panel" id="game-pendu">
+                <div class="stats-container" style="max-width:520px; margin:0 auto; text-align:center;">
+                    <h3 style="margin-top:0; font-weight:800;">🔤 Pendu</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Devine le mot avant d'épuiser tes vies !</p>
+                    <div class="pendu-lives" id="penduLives">❤️❤️❤️❤️❤️❤️</div>
+                    <div class="pendu-stage-box" id="penduStage">🙂</div>
+                    <div class="pendu-word" id="penduWord"></div>
+                    <div class="pendu-keyboard" id="penduKeyboard"></div>
+                    <div id="penduStatus" style="margin-top:16px; font-weight:800; font-size:1.05rem; min-height:24px;"></div>
+                    <button class="primary-btn" id="penduRestart" style="width:auto; padding:10px 24px; margin-top:10px;">🔄 Nouveau mot</button>
+                </div>
+            </div>
+
+            <!-- ═══ CLASSEMENT ═══ -->
+            <div class="game-panel" id="game-classement">
+                <div class="stats-container" style="max-width:560px; margin:0 auto;">
+                    <h3 style="margin-top:0; font-weight:800; text-align:center;">🏆 Classement des Jeux</h3>
+                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0; text-align:center;">Memory réussi, mots trouvés au Pendu et bons scores au Quiz (8+/10) rapportent des points 🌟</p>
+                    <div style="overflow-x:auto;">
+                        <table class="leaderboard-table" id="leaderboardTable">
+                            <thead>
+                                <tr>
+                                    <th></th>
+                                    <th>Joueur</th>
+                                    <th>🃏</th>
+                                    <th>🔤</th>
+                                    <th>🧠</th>
+                                    <th>Total</th>
+                                </tr>
+                            </thead>
+                            <tbody id="leaderboardBody"></tbody>
+                        </table>
                     </div>
                 </div>
             </div>
@@ -1729,6 +1812,55 @@
     });
 
     // ═══════════════════════════════════════════
+    //  🏆  SCORES / CLASSEMENT DES JEUX
+    // ═══════════════════════════════════════════
+    let gameScores = {}; // { [nom]: { memory: n, pendu: n, quiz: n, total: n } }
+
+    function recordGameWin(gameKey) {
+        if (!currentUser) return;
+        const current = gameScores[currentUser] || { memory: 0, pendu: 0, quiz: 0, total: 0 };
+        current[gameKey] = (current[gameKey] || 0) + 1;
+        current.total = (current.memory || 0) + (current.pendu || 0) + (current.quiz || 0);
+        gameScores[currentUser] = current;
+        setDoc(doc(db, "planning", "game_scores"), { scores: gameScores }, { merge: true });
+    }
+
+    function initClassement() {
+        onSnapshot(doc(db, "planning", "game_scores"), (snap) => {
+            gameScores = (snap.exists() && snap.data().scores) ? snap.data().scores : {};
+            renderLeaderboard();
+        });
+    }
+
+    function renderLeaderboard() {
+        const tbody = document.getElementById('leaderboardBody');
+        if (!tbody) return;
+        const rows = Object.keys(gameScores)
+            .map(name => ({ name, ...gameScores[name] }))
+            .filter(r => (r.total || 0) > 0)
+            .sort((a, b) => (b.total || 0) - (a.total || 0));
+
+        if (rows.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="lb-empty">Personne n'a encore marqué de points — à vous de jouer ! 🎲</td></tr>`;
+            return;
+        }
+
+        tbody.innerHTML = rows.map((r, i) => {
+            const medal = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : (i + 1);
+            const emo = customEmojisMapping[r.name] || '🦊';
+            return `
+                <tr>
+                    <td class="lb-rank">${medal}</td>
+                    <td>${emo} ${r.name}</td>
+                    <td>${r.memory || 0}</td>
+                    <td>${r.pendu || 0}</td>
+                    <td>${r.quiz || 0}</td>
+                    <td class="lb-total">${r.total || 0}</td>
+                </tr>`;
+        }).join('');
+    }
+
+    // ═══════════════════════════════════════════
     //  🎮  ONGLET JEUX
     // ═══════════════════════════════════════════
     let jeuxInited = false;
@@ -1752,6 +1884,8 @@
         initQuiz();
         initPuissance4();
         initDessin();
+        initPendu();
+        initClassement();
     }
 
     // ════════════════════════════════
@@ -1776,7 +1910,9 @@
         function startGame() {
             const board = document.getElementById('memBoard');
             board.innerHTML = '';
-            document.getElementById('memResult').innerText = '';
+            const resultEl = document.getElementById('memResult');
+            resultEl.innerText = '';
+            resultEl.classList.remove('win-flash');
             document.getElementById('memMoves').innerText = '0';
             flipped = []; matched = 0; moves = 0;
             cards = [...emojis, ...emojis].sort(() => Math.random() - 0.5);
@@ -1807,7 +1943,10 @@
                     matched++;
                     if (matched === emojis.length) {
                         clearInterval(timerInterval);
-                        document.getElementById('memResult').innerText = `🏆 Bravo ! ${moves} tentatives en ${formatTime(seconds)} !`;
+                        const resultEl = document.getElementById('memResult');
+                        resultEl.innerText = `🏆 Bravo ! ${moves} tentatives en ${formatTime(seconds)} !`;
+                        resultEl.classList.add('win-flash');
+                        recordGameWin('memory');
                     }
                 } else {
                     setTimeout(() => {
@@ -1856,7 +1995,9 @@
                 gameOver = true;
                 renderBoard();
                 winCombo.forEach(idx => document.getElementById('morpionBoard').children[idx].classList.add('win-cell'));
-                document.getElementById('morpionStatus').innerText = `Victoire de ${currentP === 'X' ? '❌' : '⭕'} ! 🎉`;
+                const statusEl = document.getElementById('morpionStatus');
+                statusEl.innerText = `Victoire de ${currentP === 'X' ? '❌' : '⭕'} ! 🎉`;
+                statusEl.classList.add('win-flash');
             } else if (board.every(v => v)) {
                 gameOver = true;
                 renderBoard();
@@ -1872,7 +2013,9 @@
         function reset() {
             board = Array(9).fill(null); currentP = 'X'; gameOver = false;
             document.getElementById('morpionPlayer').innerText = '❌';
-            document.getElementById('morpionStatus').innerText = 'À toi de jouer !';
+            const statusEl = document.getElementById('morpionStatus');
+            statusEl.innerText = 'À toi de jouer !';
+            statusEl.classList.remove('win-flash');
             renderBoard();
         }
 
@@ -1884,6 +2027,7 @@
     //  🧠 QUIZ
     // ════════════════════════════════
     function initQuiz() {
+        const QUESTIONS_PER_GAME = 10;
         const questions = [
             { q:"Quelle est la capitale de l'Australie ?", answers:["Sydney","Melbourne","Canberra","Brisbane"], correct:2 },
             { q:"Combien d'os compte le corps humain adulte ?", answers:["206","186","230","196"], correct:0 },
@@ -1895,15 +2039,56 @@
             { q:"Quelle est la monnaie officielle du Japon ?", answers:["Won","Yuan","Yen","Ringgit"], correct:2 },
             { q:"Quel est le pays le plus grand du monde en superficie ?", answers:["Canada","Chine","USA","Russie"], correct:3 },
             { q:"Combien de côtés a un hexagone ?", answers:["5","7","6","8"], correct:2 },
+            { q:"Quelle est la capitale du Canada ?", answers:["Toronto","Ottawa","Vancouver","Montréal"], correct:1 },
+            { q:"Quel est le plus long fleuve du monde ?", answers:["Amazone","Nil","Yangzi","Mississippi"], correct:1 },
+            { q:"Qui a peint 'La Joconde' ?", answers:["Michel-Ange","Raphaël","Léonard de Vinci","Botticelli"], correct:2 },
+            { q:"Combien de continents compte-t-on ?", answers:["5","6","7","8"], correct:2 },
+            { q:"Quel est l'élément chimique le plus abondant dans l'univers ?", answers:["Oxygène","Hydrogène","Carbone","Hélium"], correct:1 },
+            { q:"Quelle est la langue la plus parlée au monde (locuteurs natifs) ?", answers:["Anglais","Espagnol","Mandarin","Hindi"], correct:2 },
+            { q:"En quelle année l'homme a-t-il marché sur la Lune pour la première fois ?", answers:["1969","1965","1972","1959"], correct:0 },
+            { q:"Quel est l'animal terrestre le plus rapide ?", answers:["Lion","Guépard","Antilope","Autruche"], correct:1 },
+            { q:"Combien de temps met la Terre à faire le tour du Soleil ?", answers:["365 jours","30 jours","24h","1000 jours"], correct:0 },
+            { q:"Quelle est la plus haute montagne du monde ?", answers:["K2","Mont Blanc","Everest","Kilimandjaro"], correct:2 },
+            { q:"Qui a composé 'La Neuvième Symphonie' ?", answers:["Mozart","Bach","Beethoven","Chopin"], correct:2 },
+            { q:"Quel pays a inventé le sushi ?", answers:["Chine","Japon","Corée","Thaïlande"], correct:1 },
+            { q:"Quelle est la capitale de l'Égypte ?", answers:["Alexandrie","Le Caire","Louxor","Gizeh"], correct:1 },
+            { q:"Combien de dents a un adulte en moyenne ?", answers:["28","30","32","36"], correct:2 },
+            { q:"Quel est le plus grand océan du monde ?", answers:["Atlantique","Indien","Arctique","Pacifique"], correct:3 },
+            { q:"Qui a écrit 'Roméo et Juliette' ?", answers:["Molière","Shakespeare","Victor Hugo","Racine"], correct:1 },
+            { q:"Quelle planète est surnommée la 'planète rouge' ?", answers:["Vénus","Mars","Jupiter","Mercure"], correct:1 },
+            { q:"Quel est le symbole chimique de l'or ?", answers:["Or","Au","Ag","Go"], correct:1 },
+            { q:"Combien de temps dure une Coupe du Monde de football (édition classique) ?", answers:["1 mois","2 semaines","3 mois","6 semaines"], correct:0 },
+            { q:"Quel est le plus petit pays du monde ?", answers:["Monaco","Vatican","Malte","Liechtenstein"], correct:1 },
+            { q:"Quel instrument de musique possède 88 touches ?", answers:["Orgue","Piano","Accordéon","Clavecin"], correct:1 },
+            { q:"Quelle est la capitale de l'Italie ?", answers:["Milan","Venise","Rome","Naples"], correct:2 },
+            { q:"Combien de cordes possède une guitare classique ?", answers:["4","5","6","7"], correct:2 },
+            { q:"Quel est le plus grand désert chaud du monde ?", answers:["Gobi","Sahara","Kalahari","Atacama"], correct:1 },
+            { q:"Qui a formulé la théorie de la relativité ?", answers:["Newton","Einstein","Galilée","Tesla"], correct:1 },
+            { q:"Quelle est la capitale de l'Espagne ?", answers:["Barcelone","Séville","Madrid","Valence"], correct:2 },
+            { q:"Combien de zéros y a-t-il dans un million ?", answers:["4","5","6","7"], correct:2 },
+            { q:"Quel oiseau est incapable de voler mais excellent nageur ?", answers:["Autruche","Manchot","Kiwi","Dinde"], correct:1 },
+            { q:"Quelle est la capitale de l'Allemagne ?", answers:["Munich","Francfort","Hambourg","Berlin"], correct:3 },
+            { q:"Quel sport se joue à Wimbledon ?", answers:["Golf","Cricket","Tennis","Badminton"], correct:2 },
+            { q:"Quel est le plus grand mammifère du monde ?", answers:["Éléphant d'Afrique","Baleine bleue","Girafe","Requin baleine"], correct:1 },
+            { q:"Quelle est la capitale de la Russie ?", answers:["Saint-Pétersbourg","Moscou","Kiev","Minsk"], correct:1 },
+            { q:"Qui a peint 'Guernica' ?", answers:["Dalí","Picasso","Miró","Goya"], correct:1 },
+            { q:"Combien de temps met la lumière du Soleil pour atteindre la Terre ?", answers:["8 minutes","8 secondes","8 heures","1 minute"], correct:0 },
+            { q:"Quel est le plus long muscle du corps humain ?", answers:["Biceps","Couturier","Trapèze","Quadriceps"], correct:1 },
+            { q:"Quelle est la capitale du Portugal ?", answers:["Porto","Lisbonne","Faro","Coimbra"], correct:1 },
+            { q:"Quel gaz les plantes absorbent-elles pour la photosynthèse ?", answers:["Oxygène","Azote","Dioxyde de carbone","Hydrogène"], correct:2 },
+            { q:"Quelle est la capitale de la Grèce ?", answers:["Athènes","Sparte","Thessalonique","Corinthe"], correct:0 },
+            { q:"Combien de cases compte un échiquier ?", answers:["32","48","64","100"], correct:2 },
+            { q:"Quel est le plus petit os du corps humain ?", answers:["Étrier","Fémur","Tibia","Rotule"], correct:0 },
         ];
         let shuffled = [], qIdx = 0, score = 0, answered = false;
 
         function shuffle(arr) { return [...arr].sort(() => Math.random() - 0.5); }
 
         function startQuiz() {
-            shuffled = shuffle(questions);
+            shuffled = shuffle(questions).slice(0, Math.min(QUESTIONS_PER_GAME, questions.length));
             qIdx = 0; score = 0; answered = false;
             document.getElementById('quizResult').style.display = 'none';
+            document.getElementById('quizFinalScore').classList.remove('win-flash');
             document.getElementById('quizNextBtn').style.display = 'none';
             document.getElementById('quizFeedback').innerText = '';
             showQuestion();
@@ -1952,7 +2137,14 @@
                     document.getElementById('quizAnswers').innerHTML = '';
                     document.getElementById('quizFeedback').innerText = '';
                     const medals = score >= 9 ? '🥇' : score >= 6 ? '🥈' : score >= 4 ? '🥉' : '😅';
-                    document.getElementById('quizFinalScore').innerText = `${medals} ${score} / ${shuffled.length}`;
+                    const finalEl = document.getElementById('quizFinalScore');
+                    finalEl.innerText = `${medals} ${score} / ${shuffled.length}`;
+                    if (score >= 8) {
+                        finalEl.classList.add('win-flash');
+                        recordGameWin('quiz');
+                    } else {
+                        finalEl.classList.remove('win-flash');
+                    }
                 }, 1000);
             }
         }
@@ -1973,7 +2165,9 @@
             grid = Array.from({length: ROWS}, () => Array(COLS).fill(0));
             currentP = 1; gameOver = false;
             document.getElementById('p4Player').innerText = '🟡';
-            document.getElementById('p4Status').innerText = 'À toi !';
+            const statusEl = document.getElementById('p4Status');
+            statusEl.innerText = 'À toi !';
+            statusEl.classList.remove('win-flash');
             render();
         }
 
@@ -2010,6 +2204,7 @@
                     cells[r * COLS + c].classList.add('win-cell');
                 });
                 document.getElementById('p4Status').innerText = `Victoire de ${currentP === 1 ? '🟡' : '🔴'} ! 🎉`;
+                document.getElementById('p4Status').classList.add('win-flash');
             } else if (grid[0].every(v => v)) {
                 render();
                 document.getElementById('p4Status').innerText = 'Match nul ! 🤝';
@@ -2104,6 +2299,98 @@
         const firstWord = words[Math.floor(Math.random() * words.length)];
         document.getElementById('dessinWord').innerText = firstWord;
         document.getElementById('dessinWordBox').style.display = 'block';
+    }
+
+    // ════════════════════════════════
+    //  🔤 PENDU
+    // ════════════════════════════════
+    function initPendu() {
+        const words = ["ORDINATEUR","BAGUETTE","MONTAGNE","CROISSANT","GIRAFE","TRAMWAY","CHAMPIGNON","BOUTEILLE","CACTUS","PHARE","FROMAGE","OMELETTE","CUISINE","DESSERT","VAISSELLE","JARDIN","PARAPLUIE","VOLCAN","BIBLIOTHEQUE","CHOCOLAT"];
+        const stages = ['🙂','😐','😟','😧','😱','💀','⚰️'];
+        const MAX_ERRORS = stages.length - 1;
+        let word = '', guessed = [], errors = 0, over = false;
+
+        function pickWord() {
+            word = words[Math.floor(Math.random() * words.length)];
+            guessed = [];
+            errors = 0;
+            over = false;
+        }
+
+        function renderLives() {
+            document.getElementById('penduLives').innerText = '❤️'.repeat(MAX_ERRORS - errors) + '🖤'.repeat(errors);
+        }
+
+        function renderWord() {
+            document.getElementById('penduWord').innerText = word
+                .split('')
+                .map(l => guessed.includes(l) ? l : '_')
+                .join(' ');
+        }
+
+        function renderStage() {
+            document.getElementById('penduStage').innerText = stages[errors];
+        }
+
+        function renderKeyboard() {
+            const kb = document.getElementById('penduKeyboard');
+            kb.innerHTML = '';
+            'AZERTYUIOPQSDFGHJKLMWXCVBN'.split('').forEach(letter => {
+                const btn = document.createElement('button');
+                btn.className = 'pendu-key';
+                btn.innerText = letter;
+                btn.addEventListener('click', () => guessLetter(letter, btn));
+                kb.appendChild(btn);
+            });
+        }
+
+        function guessLetter(letter, btn) {
+            if (over || guessed.includes(letter)) return;
+            guessed.push(letter);
+            btn.disabled = true;
+
+            if (word.includes(letter)) {
+                btn.classList.add('good');
+            } else {
+                btn.classList.add('bad');
+                errors++;
+            }
+
+            renderLives();
+            renderStage();
+            renderWord();
+
+            const statusEl = document.getElementById('penduStatus');
+            const wordComplete = word.split('').every(l => guessed.includes(l));
+
+            if (wordComplete) {
+                over = true;
+                document.querySelectorAll('.pendu-key').forEach(b => b.disabled = true);
+                statusEl.innerText = `🎉 Gagné ! Le mot était "${word}"`;
+                statusEl.classList.add('win-flash');
+                recordGameWin('pendu');
+            } else if (errors >= MAX_ERRORS) {
+                over = true;
+                document.querySelectorAll('.pendu-key').forEach(b => b.disabled = true);
+                statusEl.classList.remove('win-flash');
+                statusEl.innerText = `💀 Perdu ! Le mot était "${word}"`;
+            } else {
+                statusEl.innerText = '';
+            }
+        }
+
+        function newGame() {
+            pickWord();
+            document.getElementById('penduStatus').innerText = '';
+            document.getElementById('penduStatus').classList.remove('win-flash');
+            renderLives();
+            renderStage();
+            renderWord();
+            renderKeyboard();
+        }
+
+        document.getElementById('penduRestart').addEventListener('click', newGame);
+        newGame();
     }
 
 

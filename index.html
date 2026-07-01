@@ -1261,6 +1261,7 @@
                     setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
                     rebuildRolesCache();
                     generatePlanningCards();
+                    initInputs();
                 });
 
                 inputEl.addEventListener('focus', () => { isEditingTeam = true; });

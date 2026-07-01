@@ -1221,6 +1221,8 @@
             const div = document.createElement('div');
             
             const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
+            const isSuperAdmin = (currentUser && currentUser.toLowerCase() === "lucas");
+            const canEditAbsence = canEdit || isSuperAdmin;
             
             div.className = `input-group ${!canEdit ? 'disabled-chef-box' : ''} ${isAbsent ? 'is-absent-global' : ''}`;
             let emojiOptionsHTML = allAvailableEmojis.map(emo => `<option value="${emo}" ${emo === currentEmoji ? 'selected' : ''}>${emo}</option>`).join('');
@@ -1231,24 +1233,12 @@
                     <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}" ${!canEdit ? 'disabled' : ''}>${emojiOptionsHTML}</select>
                 </div>
                 <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}" ${!canEdit ? 'disabled' : ''}>
-                <button class="absent-toggle ${isAbsent ? 'absent-on' : ''}" title="${isAbsent ? 'Marqé absent — cliquer pour réactiver' : 'Marquer absent permanent'}" id="absent-btn-${index}" ${!canEdit ? 'disabled' : ''}>🚫</button>
+                <button class="absent-toggle ${isAbsent ? 'absent-on' : ''}" title="${isAbsent ? 'Marqé absent — cliquer pour réactiver' : 'Marquer absent permanent'}" id="absent-btn-${index}" ${!canEditAbsence ? 'disabled' : ''}>🚫</button>
             `;
             container.appendChild(div);
             
-            if (canEdit) {
-                const selectEl = document.getElementById(`emoji-select-${index}`);
-                const inputEl = document.getElementById(`input-chef-${index}`);
+            if (canEditAbsence) {
                 const absentBtn = document.getElementById(`absent-btn-${index}`);
-
-                selectEl.addEventListener('change', (e) => {
-                    const selected = e.target.value;
-                    const idx = e.target.dataset.index;
-                    const pName = participants[idx];
-                    customEmojisMapping[pName] = selected;
-                    document.getElementById(`visual-emoji-${idx}`).innerText = selected;
-                    if(currentUser === pName) updateSidebarUserInfo();
-                    setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
-                });
 
                 absentBtn.addEventListener('click', () => {
                     const pName = participants[index];
@@ -1262,6 +1252,21 @@
                     rebuildRolesCache();
                     generatePlanningCards();
                     initInputs();
+                });
+            }
+
+            if (canEdit) {
+                const selectEl = document.getElementById(`emoji-select-${index}`);
+                const inputEl = document.getElementById(`input-chef-${index}`);
+
+                selectEl.addEventListener('change', (e) => {
+                    const selected = e.target.value;
+                    const idx = e.target.dataset.index;
+                    const pName = participants[idx];
+                    customEmojisMapping[pName] = selected;
+                    document.getElementById(`visual-emoji-${idx}`).innerText = selected;
+                    if(currentUser === pName) updateSidebarUserInfo();
+                    setDoc(doc(db, "planning", "global_team"), { customEmojisMapping: customEmojisMapping }, { merge: true });
                 });
 
                 inputEl.addEventListener('focus', () => { isEditingTeam = true; });

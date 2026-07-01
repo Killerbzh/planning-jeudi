@@ -728,7 +728,15 @@
     let absentGlobaux = {};
     let allMonthsOverrides = {}; // overrides manuels de tous les mois
     let rolesCache = {};         // planning complet calculé séquentiellement
-    let currentMonth = "2026-06";
+    function getDefaultCurrentMonth() {
+        const availableMonths = ["2026-06", "2026-07", "2026-08", "2026-09", "2026-10", "2026-11", "2026-12"];
+        const now = new Date();
+        const key = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+        if (availableMonths.includes(key)) return key;
+        // Si on est avant la période dispo, on prend le premier mois ; si après, le dernier
+        return key < availableMonths[0] ? availableMonths[0] : availableMonths[availableMonths.length - 1];
+    }
+    let currentMonth = getDefaultCurrentMonth();
     let currentUser = "";
     let unsubscribeMonth = null;
     let unsubscribeSession = null;
@@ -1313,6 +1321,8 @@
         });
     }
 
+    document.getElementById('monthSelect').value = currentMonth;
+    document.getElementById('planningTitle').innerText = `📅 Les Jeudis de ${monthNames[currentMonth]}`;
     connectToMonth(currentMonth);
 
     function updateRoleManually(globalIndex, roleType, selectedValue) {
@@ -1672,10 +1682,11 @@
         if (!gIdx) return;
         
         const dayData = thursdaysData[gIdx] || {};
-        const presents = dayData.presences || [];
+        const roles = getRolesForGlobalIndex(gIdx);
+        const presents = (dayData.presences || []).filter(p => p !== roles.plat && p !== roles.dessert);
         
         if (presents.length < 2) {
-            return alert("Il faut au moins 2 personnes présentes à cette date pour lancer le tirage !");
+            return alert("Il faut au moins 2 personnes présentes (hors chef du plat et du dessert) à cette date pour lancer le tirage !");
         }
 
         const roue = document.getElementById('roueContainer');

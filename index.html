@@ -658,9 +658,33 @@
             <div class="game-panel" id="game-morpion">
                 <div class="stats-container" style="max-width:420px; margin:0 auto; text-align:center;">
                     <h3 style="margin-top:0; font-weight:800;">⭕ Morpion</h3>
-                    <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Joueur <span id="morpionPlayer" style="color:#38bdf8; font-weight:800;">❌</span> — <span id="morpionStatus">À toi de jouer !</span></p>
-                    <div id="morpionBoard" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:16px auto;"></div>
-                    <button class="primary-btn" id="morpionReset" style="width:auto; padding:10px 24px; margin-top:12px;">🔄 Rejouer</button>
+
+                    <!-- Choix du mode -->
+                    <div id="morpionModeSelect" style="display:flex; flex-direction:column; gap:14px; align-items:center; padding:10px 0;">
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin:0;">Comment veux-tu jouer ?</p>
+                        <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center;">
+                            <button class="primary-btn" id="morpionLocalBtn" style="width:auto; padding:12px 22px;">📱 En local</button>
+                            <button class="primary-btn" id="morpionOnlineBtn" style="width:auto; padding:12px 22px; background:#7c3aed; box-shadow:0 4px 6px -1px rgba(124,58,237,0.3);">🌐 En ligne</button>
+                        </div>
+                    </div>
+
+                    <!-- Choix de l'adversaire -->
+                    <div id="morpionOpponentSelect" style="display:none; flex-direction:column; gap:10px; padding:10px 0;">
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin:0;">Choisis ton adversaire :</p>
+                        <div id="morpionOpponentList" style="display:flex; flex-direction:column; gap:8px; max-height:280px; overflow-y:auto;"></div>
+                        <button class="logout-btn" id="morpionBackFromOpponent" style="align-self:center;">← Retour</button>
+                    </div>
+
+                    <!-- Plateau -->
+                    <div id="morpionGameZone" style="display:none;">
+                        <p style="color:var(--text-muted); font-size:0.78rem; margin:0 0 4px 0;" id="morpionModeLine"></p>
+                        <p style="color:var(--text-muted); font-size:0.85rem; margin-top:0;">Joueur <span id="morpionPlayer" style="color:#38bdf8; font-weight:800;">❌</span> — <span id="morpionStatus">À toi de jouer !</span></p>
+                        <div id="morpionBoard" style="display:grid; grid-template-columns:repeat(3,1fr); gap:10px; max-width:280px; margin:16px auto;"></div>
+                        <div style="display:flex; gap:10px; justify-content:center; flex-wrap:wrap;">
+                            <button class="primary-btn" id="morpionReset" style="width:auto; padding:10px 24px; margin-top:4px;">🔄 Rejouer</button>
+                            <button class="logout-btn" id="morpionQuit" style="margin-top:4px;">🚪 Changer de mode</button>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -1996,8 +2020,24 @@
     //  ⭕ MORPION
     // ════════════════════════════════
     function initMorpion() {
-        let board = Array(9).fill(null), currentP = 'X', gameOver = false;
         const wins = [[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+
+        // ── État partagé ──
+        let board = Array(9).fill(null);
+        let currentP = 'X';
+        let gameOver = false;
+        let mode = null; // 'local' | 'online'
+
+        // ── État spécifique au mode en ligne ──
+        let onlineOpponent = null;
+        let onlineGameId = null;
+        let mySymbol = null;
+        let unsubscribeMorpionGame = null;
+
+        const modeSelectEl    = document.getElementById('morpionModeSelect');
+        const opponentSelectEl = document.getElementById('morpionOpponentSelect');
+        const gameZoneEl      = document.getElementById('morpionGameZone');
+        const modeLineEl      = document.getElementById('morpionModeLine');
 
         function checkWin() {
             for (const [a,b,c] of wins) {
@@ -2018,8 +2058,128 @@
             });
         }
 
+        // ── Retour à l'écran de choix de mode ──
+        function showModeSelect() {
+            if (unsubscribeMorpionGame) { unsubscribeMorpionGame(); unsubscribeMorpionGame = null; }
+            mode = null; onlineOpponent = null; onlineGameId = null; mySymbol = null;
+            modeSelectEl.style.display = 'flex';
+            opponentSelectEl.style.display = 'none';
+            gameZoneEl.style.display = 'none';
+        }
+
+        // ── Écran de choix de l'adversaire ──
+        function showOpponentSelect() {
+            modeSelectEl.style.display = 'none';
+            opponentSelectEl.style.display = 'flex';
+            gameZoneEl.style.display = 'none';
+
+            const listEl = document.getElementById('morpionOpponentList');
+            listEl.innerHTML = '';
+            const others = participants.filter(p => p !== currentUser);
+            if (others.length === 0) {
+                listEl.innerHTML = `<p style="color:var(--text-muted); font-size:0.85rem;">Pas d'autre joueur disponible pour le moment.</p>`;
+                return;
+            }
+            others.forEach(name => {
+                const btn = document.createElement('button');
+                btn.className = 'nav-btn';
+                btn.style.justifyContent = 'center';
+                btn.innerText = `${customEmojisMapping[name] || '🦊'} ${name}`;
+                btn.addEventListener('click', () => startOnlineGame(name));
+                listEl.appendChild(btn);
+            });
+        }
+
+        // ── Démarrage / reprise d'une partie locale ──
+        function startLocalGame() {
+            mode = 'local';
+            modeSelectEl.style.display = 'none';
+            opponentSelectEl.style.display = 'none';
+            gameZoneEl.style.display = 'block';
+            modeLineEl.innerText = '📱 Partie locale — à deux sur le même écran';
+            resetLocalState();
+        }
+
+        function resetLocalState() {
+            board = Array(9).fill(null); currentP = 'X'; gameOver = false;
+            document.getElementById('morpionPlayer').innerText = '❌';
+            const statusEl = document.getElementById('morpionStatus');
+            statusEl.innerText = 'À toi de jouer !';
+            statusEl.classList.remove('win-flash');
+            renderBoard();
+        }
+
+        // ── Démarrage / rejointe d'une partie en ligne ──
+        async function startOnlineGame(opponentName) {
+            onlineOpponent = opponentName;
+            const pair = [currentUser, opponentName].sort();
+            onlineGameId = pair.join('_vs_');
+            mySymbol = (currentUser === pair[0]) ? 'X' : 'O';
+
+            mode = 'online';
+            modeSelectEl.style.display = 'none';
+            opponentSelectEl.style.display = 'none';
+            gameZoneEl.style.display = 'block';
+            modeLineEl.innerText = `🌐 En ligne contre ${customEmojisMapping[opponentName] || '🦊'} ${opponentName} — tu es ${mySymbol === 'X' ? '❌' : '⭕'}`;
+            document.getElementById('morpionStatus').innerText = 'Connexion à la partie...';
+
+            const gameRef = doc(db, "morpion_games", onlineGameId);
+            try {
+                const snap = await getDoc(gameRef);
+                if (!snap.exists()) {
+                    await setDoc(gameRef, {
+                        players: pair,
+                        board: Array(9).fill(null),
+                        turn: 'X',
+                        status: 'playing',
+                        winner: null,
+                        winCombo: null
+                    });
+                }
+            } catch (e) {
+                document.getElementById('morpionStatus').innerText = "Erreur de connexion à la partie.";
+            }
+
+            if (unsubscribeMorpionGame) unsubscribeMorpionGame();
+            unsubscribeMorpionGame = onSnapshot(gameRef, (docSnap) => {
+                if (!docSnap.exists()) return;
+                const data = docSnap.data();
+                board = data.board || Array(9).fill(null);
+                currentP = data.turn || 'X';
+                gameOver = data.status !== 'playing';
+                renderOnlineStatus(data);
+                renderBoard();
+            });
+        }
+
+        function renderOnlineStatus(data) {
+            const statusEl = document.getElementById('morpionStatus');
+            document.getElementById('morpionPlayer').innerText = currentP === 'X' ? '❌' : '⭕';
+            statusEl.classList.remove('win-flash');
+            if (data.status === 'won') {
+                statusEl.innerText = data.winner === mySymbol ? '🎉 Tu as gagné !' : `😅 ${onlineOpponent} a gagné !`;
+                statusEl.classList.add('win-flash');
+            } else if (data.status === 'draw') {
+                statusEl.innerText = 'Match nul ! 🤝';
+            } else if (currentP === mySymbol) {
+                statusEl.innerText = 'À toi de jouer !';
+            } else {
+                statusEl.innerText = `Au tour de ${onlineOpponent}...`;
+            }
+        }
+
+        // ── Jouer un coup (dispatch selon le mode) ──
         function play(i) {
             if (gameOver || board[i]) return;
+            if (mode === 'online') {
+                if (currentP !== mySymbol) return; // pas notre tour
+                playOnline(i);
+            } else {
+                playLocal(i);
+            }
+        }
+
+        function playLocal(i) {
             board[i] = currentP;
             const winCombo = checkWin();
             if (winCombo) {
@@ -2041,18 +2201,51 @@
             }
         }
 
-        function reset() {
-            board = Array(9).fill(null); currentP = 'X'; gameOver = false;
-            document.getElementById('morpionPlayer').innerText = '❌';
-            const statusEl = document.getElementById('morpionStatus');
-            statusEl.innerText = 'À toi de jouer !';
-            statusEl.classList.remove('win-flash');
-            renderBoard();
+        function playOnline(i) {
+            const newBoard = [...board];
+            newBoard[i] = mySymbol;
+            const wasWin = (() => {
+                for (const [a,b,c] of wins) {
+                    if (newBoard[a] && newBoard[a] === newBoard[b] && newBoard[a] === newBoard[c]) return [a,b,c];
+                }
+                return null;
+            })();
+            const isDraw = !wasWin && newBoard.every(v => v);
+
+            const update = {
+                board: newBoard,
+                turn: mySymbol === 'X' ? 'O' : 'X',
+                status: wasWin ? 'won' : (isDraw ? 'draw' : 'playing'),
+                winner: wasWin ? mySymbol : null,
+                winCombo: wasWin || null
+            };
+            setDoc(doc(db, "morpion_games", onlineGameId), update, { merge: true });
         }
 
+        // ── Rejouer ──
+        function reset() {
+            if (mode === 'online' && onlineGameId) {
+                setDoc(doc(db, "morpion_games", onlineGameId), {
+                    board: Array(9).fill(null),
+                    turn: 'X',
+                    status: 'playing',
+                    winner: null,
+                    winCombo: null
+                }, { merge: true });
+            } else {
+                resetLocalState();
+            }
+        }
+
+        document.getElementById('morpionLocalBtn').addEventListener('click', startLocalGame);
+        document.getElementById('morpionOnlineBtn').addEventListener('click', showOpponentSelect);
+        document.getElementById('morpionBackFromOpponent').addEventListener('click', showModeSelect);
+        document.getElementById('morpionQuit').addEventListener('click', showModeSelect);
         document.getElementById('morpionReset').addEventListener('click', reset);
-        renderBoard();
+
+        showModeSelect();
     }
+
 
     // ════════════════════════════════
     //  🧠 QUIZ

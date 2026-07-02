@@ -1422,6 +1422,14 @@
     connectToMonth(currentMonth);
 
     function updateRoleManually(globalIndex, roleType, selectedValue) {
+        // Garde-fou : seul Lucas peut modifier Plat & Dessert, le rôle Remplaçant est libre pour tous
+        const isSuperAdmin = (currentUser && currentUser.toLowerCase() === "lucas");
+        if ((roleType === 'plat' || roleType === 'dessert') && !isSuperAdmin) {
+            alert("Seul Lucas peut modifier le Plat Principal et le Dessert.");
+            generatePlanningCards();
+            return;
+        }
+
         // Lire le résultat actuel du cache (avant modification) pour avoir les 3 rôles
         const current = rolesCache[globalIndex] || getRolesForGlobalIndex(globalIndex);
 
@@ -1516,8 +1524,11 @@
 
             // Déterminer si ce jeudi est passé
             const isPast = isPastThursday(parseInt(year), monthIndex, thurs.dayOfMonth);
-            // Seul Lucas peut modifier les rôles des jours passés
-            const canEditRoles = !isPast || (currentUser && currentUser.toLowerCase() === "lucas");
+            const isSuperAdminRoles = (currentUser && currentUser.toLowerCase() === "lucas");
+            // Seul Lucas peut modifier Plat & Dessert
+            const canEditPlatDessert = isSuperAdminRoles;
+            // Le rôle Remplaçant reste modifiable par tout le monde
+            const canEditRemp = true;
 
             const pVotes = Object.values(ratingsPlat);
             const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";
@@ -1544,8 +1555,10 @@
             const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";
 
             const pastBadge = isPast ? `<span style="font-size:0.65rem;font-weight:800;background:rgba(148,163,184,0.15);color:#94a3b8;padding:2px 8px;border-radius:20px;margin-left:8px;letter-spacing:0.5px;">PASSÉ</span>` : '';
-            const roleSelectDisabledAttr = canEditRoles ? '' : 'disabled';
-            const roleSelectDisabledStyle = canEditRoles ? '' : 'style="opacity:0.5;cursor:not-allowed;"';
+            const platDessertDisabledAttr = canEditPlatDessert ? '' : 'disabled';
+            const platDessertDisabledStyle = canEditPlatDessert ? '' : 'style="opacity:0.5;cursor:not-allowed;"';
+            const rempDisabledAttr = canEditRemp ? '' : 'disabled';
+            const rempDisabledStyle = canEditRemp ? '' : 'style="opacity:0.5;cursor:not-allowed;"';
             const presenceBtnDisabled = isPast ? 'disabled style="opacity:0.4;cursor:not-allowed;"' : '';
 
             card.innerHTML = `
@@ -1553,15 +1566,15 @@
                 
                 <div class="role-box">
                     <span class="role-label">🧑‍🍳 Plat Principal${platAbsent}</span>
-                    <select class="role-select-custom" data-role="plat" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectPlat}</select>
+                    <select class="role-select-custom" data-role="plat" ${platDessertDisabledAttr} ${platDessertDisabledStyle}>${selectPlat}</select>
                 </div>
                 <div class="role-box">
                     <span class="role-label">🧁 Dessert${dessertAbsent}</span>
-                    <select class="role-select-custom" data-role="dessert" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectDessert}</select>
+                    <select class="role-select-custom" data-role="dessert" ${platDessertDisabledAttr} ${platDessertDisabledStyle}>${selectDessert}</select>
                 </div>
                 <div class="role-box">
                     <span class="role-label">🛟 Remplaçant${rempAbsent}</span>
-                    <select class="role-select-custom" data-role="remp" ${roleSelectDisabledAttr} ${roleSelectDisabledStyle}>${selectRemp}</select>
+                    <select class="role-select-custom" data-role="remp" ${rempDisabledAttr} ${rempDisabledStyle}>${selectRemp}</select>
                 </div>
 
                 <div class="presence-zone">

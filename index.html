@@ -980,6 +980,30 @@
         rebuildRolesCache();
     }
 
+    // ─── Écrit les gels de jours passés de façon fiable, avec nouvelles tentatives ───
+    // en cas d'échec (coupure réseau, etc.), au lieu d'un "fire-and-forget" silencieux.
+    async function persistFrozenUpdates(frozenUpdates) {
+        for (const [monthId, newOvs] of Object.entries(frozenUpdates)) {
+            let success = false;
+            let attempts = 0;
+            while (!success && attempts < 3) {
+                try {
+                    await setDoc(doc(db, "planning", `mois_${monthId}`), { overrides: newOvs }, { merge: true });
+                    success = true;
+                } catch (err) {
+                    attempts++;
+                    console.log(`Échec de l'écriture du gel pour ${monthId} (tentative ${attempts}/3) :`, err);
+                    if (attempts < 3) {
+                        await new Promise(resolve => setTimeout(resolve, 800 * attempts));
+                    }
+                }
+            }
+            if (!success) {
+                console.log(`⚠️ Impossible de figer le mois ${monthId} après 3 tentatives. Ça sera retenté à la prochaine connexion.`);
+            }
+        }
+    }
+
     // ─── Reconstruit le planning COMPLET de façon séquentielle ───
     // DEUX PASSES SÉPARÉES :
     //   Passe 1 – jours PASSÉS : tous les participants (absents inclus) pour
@@ -1049,10 +1073,13 @@
             if (countsAll[result.remp])    { countsAll[result.remp].remp++;    countsAll[result.remp].total++;    }
         }
 
-        // Sauvegarder les gels en Firestore (asynchrone)
-        Object.entries(frozenUpdates).forEach(([monthId, newOvs]) => {
-            setDoc(doc(db, "planning", `mois_${monthId}`), { overrides: newOvs }, { merge: true });
-        });
+        // Sauvegarder les gels en Firestore, de façon FIABLE :
+        // - on attend la confirmation d'écriture (au lieu de tirer et d'oublier)
+        // - on réessaie automatiquement en cas d'échec (jusqu'à 3 tentatives, avec délai)
+        // Ça évite qu'un jour "passé" reste non-gelé si l'écriture rate, ce qui
+        // provoquait un recalcul différent (donc des noms qui changent) à la
+        // prochaine connexion si l'équipe avait entre-temps changé.
+        persistFrozenUpdates(frozenUpdates);
 
         // ── PASSE 2 : jours FUTURS avec seulement les participants ACTIFS ──────
         const activeParticipants = participants.filter(p => !absentGlobaux[p]);

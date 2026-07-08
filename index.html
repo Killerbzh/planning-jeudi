@@ -655,7 +655,6 @@
 
         <!-- ONGLET 1 : PLANNING -->
         <div id="page-aperçu" class="page-section active">
-            <button class="nav-btn" id="btn-notif-enable-mobile" onclick="enableNotifications()" style="background: rgba(56,189,248,0.1); color:#38bdf8; font-weight:800; margin-bottom:16px; justify-content:center;">🔔 <span>Activer les notifications</span></button>
             <div class="accordion-header" id="teamAccordionHeader">
                 <span>👥 Gérer l'équipe (<span id="teamCount">0</span>)</span>
                 <span id="accordionArrow">▼</span>
@@ -920,7 +919,6 @@
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
     import { getFirestore, doc, onSnapshot, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-    import { getMessaging, getToken, onMessage, isSupported } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
@@ -934,57 +932,6 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-
-    // ─── Notifications push (Firebase Cloud Messaging) ───
-    // Remplace par ta propre clé VAPID, générée dans la console Firebase
-    // (Paramètres du projet → Cloud Messaging → Certificats web push → Générer une paire de clés).
-    const VAPID_KEY = "BI3hU6kUgTKUHacE1h5hqvIPgsC1kVPnG2xsOG9vsHOHptJUmU20qUhkmYZ3TXM4veuoKcwC1M7vti2hdXwqqT8";
-    let messaging = null;
-    isSupported().then((ok) => { if (ok) messaging = getMessaging(app); });
-
-    async function enableNotifications() {
-        if (!('Notification' in window)) {
-            return alert("Les notifications ne sont pas supportées sur cet appareil/navigateur.");
-        }
-        if (!currentUser) {
-            return alert("Connecte-toi d'abord à ton profil.");
-        }
-        if (!messaging) {
-            return alert("Les notifications ne sont pas encore prêtes, réessaie dans quelques secondes.");
-        }
-        try {
-            const permission = await Notification.requestPermission();
-            if (permission !== "granted") {
-                return alert("Tu as refusé les notifications. Tu peux les réactiver dans les réglages de ton navigateur/téléphone.");
-            }
-            const registration = await navigator.serviceWorker.ready;
-            const token = await getToken(messaging, { vapidKey: VAPID_KEY, serviceWorkerRegistration: registration });
-            if (!token) {
-                return alert("Impossible de récupérer le token de notification. Réessaie plus tard.");
-            }
-            await setDoc(doc(db, "notifTokens", token), {
-                userName: currentUser,
-                token: token,
-                updatedAt: Date.now()
-            });
-            alert("🔔 Notifications activées ! Tu recevras un rappel chaque jeudi.");
-        } catch (err) {
-            console.error("Erreur activation notifications :", err);
-            alert("Erreur : " + (err.code || err.name || "") + " — " + (err.message || err));
-        }
-    }
-    window.enableNotifications = enableNotifications;
-
-    // Affiche une alerte discrète si une notif arrive pendant que l'app est ouverte
-    isSupported().then((ok) => {
-        if (ok && messaging) {
-            onMessage(messaging, (payload) => {
-                const title = payload.notification?.title || "Le Planning des Jeudis";
-                const body = payload.notification?.body || "";
-                alert(`🔔 ${title}\n${body}`);
-            });
-        }
-    });
 
     const emojiThemes = {
         "🦁 Animaux": ["🦊", "🦁", "🐼", "🐨", "🐯", "🐱", "🐰", "🦄", "🦅", "🦝", "🐸", "🐵", "🐙", "🦑", "🦐", "🦩", "🦖", "🦕", "🐢", "🐝", "🦋", "🦉", "🐧", "🦔"],

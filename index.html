@@ -970,7 +970,7 @@
             alert("🔔 Notifications activées ! Tu recevras un rappel chaque jeudi.");
         } catch (err) {
             console.error("Erreur activation notifications :", err);
-            alert("Une erreur est survenue lors de l'activation des notifications.");
+            alert("Erreur : " + (err.code || err.name || "") + " — " + (err.message || err));
         }
     }
     window.enableNotifications = enableNotifications;

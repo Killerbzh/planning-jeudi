@@ -239,6 +239,43 @@
         .input-group.is-absent-global { background: rgba(244,63,94,0.05); border-color: rgba(244,63,94,0.25); }
         .input-group.is-absent-global input { color: #f43f5e; text-decoration: line-through; opacity: 0.6; }
 
+        /* Bouton absence ponctuelle (plage de dates) */
+        .temp-absent-toggle {
+            background: none; border: none; font-size: 1.1rem; cursor: pointer;
+            opacity: 0.55; transition: all 0.2s ease; padding: 4px; border-radius: 8px;
+        }
+        .temp-absent-toggle:hover { opacity: 1; background: rgba(56,189,248,0.1); }
+        .temp-absent-toggle.has-temp-absence { opacity: 1; filter: drop-shadow(0 0 4px rgba(251,146,60,0.6)); }
+
+        /* Modale absences ponctuelles */
+        .temp-absence-overlay {
+            display: none; position: fixed; inset: 0; z-index: 4000;
+            background: rgba(15, 23, 42, 0.75); backdrop-filter: blur(6px);
+            justify-content: center; align-items: center; padding: 16px; overflow-y: auto;
+        }
+        .temp-absence-overlay.open { display: flex; }
+        .temp-absence-card {
+            position: relative; background: rgba(30, 41, 59, 0.95); border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 20px; padding: 28px 22px; max-width: 420px; width: 100%;
+            box-shadow: var(--card-shadow); animation: scaleIn 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+        .temp-absence-card h3 { margin: 0 0 6px; font-size: 1.2rem; font-weight: 800; color: white; }
+        .temp-absence-sub { color: #94a3b8; font-size: 0.82rem; margin: 0 0 16px; line-height: 1.4; }
+        .temp-absence-close {
+            position: absolute; top: 14px; right: 14px; background: rgba(255,255,255,0.08); border: none;
+            color: #94a3b8; width: 28px; height: 28px; border-radius: 50%; cursor: pointer; font-size: 0.9rem;
+        }
+        .temp-absence-close:hover { color: white; background: rgba(255,255,255,0.16); }
+        .temp-absence-list { display: flex; flex-direction: column; gap: 8px; margin-bottom: 18px; max-height: 180px; overflow-y: auto; }
+        .temp-absence-empty { color: #64748b; font-size: 0.85rem; font-style: italic; padding: 6px 2px; }
+        .temp-absence-item {
+            display: flex; justify-content: space-between; align-items: center;
+            background: #0f172a; border: 1px solid #334155; border-radius: 10px; padding: 10px 12px;
+            font-size: 0.82rem;
+        }
+        .temp-absence-remove { background: none; border: none; cursor: pointer; font-size: 0.9rem; opacity: 0.7; }
+        .temp-absence-remove:hover { opacity: 1; }
+
         /* Grille & Cartes de planning */
         .page-section { display: none; }
         .page-section.active { display: block; }
@@ -918,7 +955,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, doc, onSnapshot, setDoc, getDoc, getDocs, collection } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, doc, onSnapshot, setDoc, getDoc, getDocs, collection, deleteField } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyCsJACTFFdHAFlvOQNw9h5spegq7lV2-zE",
@@ -952,6 +989,7 @@
     let thursdaysData = {};
     let overrides = {}; 
     let absentGlobaux = {};
+    let absencesTemp = {}; // { "Nom": [ { from: "2026-07-10", to: "2026-07-24" }, ... ] } — absences ponctuelles sur une plage de dates
     let allMonthsOverrides = {}; // overrides manuels de tous les mois
     let rolesCache = {};         // planning complet calculé séquentiellement
     let rolesCacheReady = false; // true seulement après le premier calcul complet du mois courant
@@ -1044,6 +1082,130 @@
         const thursdayDate = new Date(year, monthIndex, dayOfMonth);
         thursdayDate.setHours(0, 0, 0, 0);
         return thursdayDate < today;
+    }
+
+    // ─── Convertit une string "YYYY-MM-DD" en Date locale à minuit ───
+    function parseISODate(str) {
+        const [y, m, d] = str.split('-').map(Number);
+        return new Date(y, m - 1, d);
+    }
+
+    // ─── Vrai si `name` est absent (permanent OU sur une plage temporaire) à `date` ───
+    function isAbsentOnDate(name, date) {
+        if (absentGlobaux[name]) return true;
+        const ranges = absencesTemp[name];
+        if (!ranges || !ranges.length) return false;
+        const d = new Date(date);
+        d.setHours(0, 0, 0, 0);
+        return ranges.some(r => {
+            const from = parseISODate(r.from);
+            const to = parseISODate(r.to);
+            return d >= from && d <= to;
+        });
+    }
+
+    // ─── Ajoute une absence temporaire (plage de dates) pour `name` ───
+    function addTempAbsence(name, from, to) {
+        if (!from || !to) return;
+        if (parseISODate(from) > parseISODate(to)) { alert("La date de début doit être avant la date de fin."); return; }
+        if (!absencesTemp[name]) absencesTemp[name] = [];
+        absencesTemp[name].push({ from, to });
+        setDoc(doc(db, "planning", "global_team"), { absencesTemp: { [name]: absencesTemp[name] } }, { merge: true });
+        rebuildRolesCache();
+        generatePlanningCards();
+        renderTempAbsenceModal(name);
+    }
+
+    // ─── Supprime une absence temporaire précise pour `name` ───
+    function removeTempAbsence(name, rangeIndex) {
+        if (!absencesTemp[name]) return;
+        absencesTemp[name].splice(rangeIndex, 1);
+        const update = {};
+        if (absencesTemp[name].length === 0) {
+            delete absencesTemp[name];
+            update[name] = deleteField();
+        } else {
+            update[name] = absencesTemp[name];
+        }
+        setDoc(doc(db, "planning", "global_team"), { absencesTemp: update }, { merge: true });
+        rebuildRolesCache();
+        generatePlanningCards();
+        renderTempAbsenceModal(name);
+    }
+
+    // ─── Modale d'absences temporaires (créée dynamiquement, une seule instance réutilisée) ───
+    function ensureTempAbsenceModal() {
+        if (document.getElementById('tempAbsenceOverlay')) return;
+        const overlay = document.createElement('div');
+        overlay.id = 'tempAbsenceOverlay';
+        overlay.className = 'temp-absence-overlay';
+        overlay.innerHTML = `
+            <div class="temp-absence-card">
+                <button class="temp-absence-close" id="tempAbsenceClose">✕</button>
+                <h3 id="tempAbsenceTitle">Absences ponctuelles</h3>
+                <p class="temp-absence-sub">Marque une période où <span id="tempAbsenceName"></span> est absent(e). Les jours déjà passés ne sont jamais modifiés.</p>
+                <div class="temp-absence-list" id="tempAbsenceList"></div>
+                <div class="temp-absence-form">
+                    <div class="form-control" style="margin-bottom:10px;">
+                        <label>Du</label>
+                        <input type="date" id="tempAbsenceFrom">
+                    </div>
+                    <div class="form-control" style="margin-bottom:10px;">
+                        <label>Au</label>
+                        <input type="date" id="tempAbsenceTo">
+                    </div>
+                    <button class="primary-btn" id="tempAbsenceAdd">➕ Ajouter cette période</button>
+                </div>
+            </div>
+        `;
+        document.body.appendChild(overlay);
+        document.getElementById('tempAbsenceClose').addEventListener('click', closeTempAbsenceModal);
+        overlay.addEventListener('click', (e) => { if (e.target === overlay) closeTempAbsenceModal(); });
+    }
+
+    let tempAbsenceCurrentName = null;
+
+    function renderTempAbsenceModal(name) {
+        const list = document.getElementById('tempAbsenceList');
+        const ranges = absencesTemp[name] || [];
+        if (!ranges.length) {
+            list.innerHTML = `<div class="temp-absence-empty">Aucune période enregistrée.</div>`;
+        } else {
+            list.innerHTML = ranges.map((r, idx) => `
+                <div class="temp-absence-item">
+                    <span>🗓️ Du <strong>${r.from.split('-').reverse().join('/')}</strong> au <strong>${r.to.split('-').reverse().join('/')}</strong></span>
+                    <button class="temp-absence-remove" data-idx="${idx}" title="Supprimer">🗑️</button>
+                </div>
+            `).join('');
+            list.querySelectorAll('.temp-absence-remove').forEach(btn => {
+                btn.addEventListener('click', () => removeTempAbsence(name, parseInt(btn.dataset.idx)));
+            });
+        }
+    }
+
+    function openTempAbsenceModal(name) {
+        ensureTempAbsenceModal();
+        tempAbsenceCurrentName = name;
+        document.getElementById('tempAbsenceName').innerText = name;
+        document.getElementById('tempAbsenceFrom').value = '';
+        document.getElementById('tempAbsenceTo').value = '';
+        renderTempAbsenceModal(name);
+        const addBtn = document.getElementById('tempAbsenceAdd');
+        addBtn.onclick = () => {
+            const from = document.getElementById('tempAbsenceFrom').value;
+            const to = document.getElementById('tempAbsenceTo').value;
+            if (!from || !to) { alert("Choisis une date de début et une date de fin."); return; }
+            addTempAbsence(name, from, to);
+            document.getElementById('tempAbsenceFrom').value = '';
+            document.getElementById('tempAbsenceTo').value = '';
+        };
+        document.getElementById('tempAbsenceOverlay').classList.add('open');
+    }
+
+    function closeTempAbsenceModal() {
+        const overlay = document.getElementById('tempAbsenceOverlay');
+        if (overlay) overlay.classList.remove('open');
+        tempAbsenceCurrentName = null;
     }
 
     // ─── Charge les overrides manuels depuis Firestore (tous les mois) ───
@@ -1202,9 +1364,17 @@
                     remp:    allMonthsOverrides[i].remp    || "Aucun"
                 };
             } else {
-                const plat    = pickLeastFrom(orderedActive, countsFuture, 'plat',    []);
-                const dessert = pickLeastFrom(orderedActive, countsFuture, 'dessert', [plat]);
-                const remp    = pickLeastFrom(orderedActive, countsFuture, 'remp',    [plat, dessert]);
+                // On retire en plus, pour CE jeudi précis, les personnes en
+                // absence ponctuelle (plage de dates) qui couvre cette date.
+                const thursdayDateForDay = getThursdayDateFromGlobalIndex(i);
+                const dayPool = thursdayDateForDay
+                    ? orderedActive.filter(p => !isAbsentOnDate(p, thursdayDateForDay))
+                    : orderedActive;
+                const pool = dayPool.length ? dayPool : orderedActive; // filet de sécurité si tout le monde est absent ce jour-là
+
+                const plat    = pickLeastFrom(pool, countsFuture, 'plat',    []);
+                const dessert = pickLeastFrom(pool, countsFuture, 'dessert', [plat]);
+                const remp    = pickLeastFrom(pool, countsFuture, 'remp',    [plat, dessert]);
                 result = { plat, dessert, remp };
             }
 
@@ -1460,6 +1630,7 @@
             participants = teamData.names || [...defaultParticipants];
             customEmojisMapping = teamData.customEmojisMapping || {};
             absentGlobaux = teamData.absentGlobaux || {};
+            absencesTemp = teamData.absencesTemp || {};
         }
         
         fillExistingProfilesDropdown();
@@ -1501,6 +1672,7 @@
         participants.forEach((name, index) => {
             const currentEmoji = customEmojisMapping[name] || "🦊";
             const isAbsent = !!absentGlobaux[name];
+            const hasTempAbsence = !!(absencesTemp[name] && absencesTemp[name].length);
             const div = document.createElement('div');
             
             const canEdit = (currentUser && currentUser.toLowerCase() === name.toLowerCase());
@@ -1516,6 +1688,7 @@
                     <select class="edit-emoji-select" data-index="${index}" id="emoji-select-${index}" ${!canEdit ? 'disabled' : ''}>${emojiOptionsHTML}</select>
                 </div>
                 <input type="text" value="${name}" data-index="${index}" id="input-chef-${index}" ${!canEdit ? 'disabled' : ''}>
+                <button class="temp-absent-toggle ${hasTempAbsence ? 'has-temp-absence' : ''}" title="Absences ponctuelles (par période de dates)" id="temp-absent-btn-${index}" ${!canEditAbsence ? 'disabled' : ''}>📅</button>
                 <button class="absent-toggle ${isAbsent ? 'absent-on' : ''}" title="${isAbsent ? 'Marqé absent — cliquer pour réactiver' : 'Marquer absent permanent'}" id="absent-btn-${index}" ${!canEditAbsence ? 'disabled' : ''}>🚫</button>
             `;
             container.appendChild(div);
@@ -1525,16 +1698,30 @@
 
                 absentBtn.addEventListener('click', () => {
                     const pName = participants[index];
+                    const update = {};
                     if (absentGlobaux[pName]) {
+                        // On supprime VRAIMENT la clé côté Firestore avec deleteField().
+                        // Avant, on faisait juste `delete absentGlobaux[pName]` puis on
+                        // réécrivait tout l'objet avec merge:true — mais merge:true ne
+                        // supprime jamais une clé absente de l'écriture, il l'ignore.
+                        // Résultat : la clé restait "true" pour toujours côté serveur,
+                        // et revenait dès le prochain rechargement (d'où le blocage sur "true").
                         delete absentGlobaux[pName];
+                        update[pName] = deleteField();
                     } else {
                         absentGlobaux[pName] = true;
+                        update[pName] = true;
                     }
                     // rebuildRolesCache gèle automatiquement les jours passés avant de recalculer
-                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: absentGlobaux }, { merge: true });
+                    setDoc(doc(db, "planning", "global_team"), { absentGlobaux: update }, { merge: true });
                     rebuildRolesCache();
                     generatePlanningCards();
                     initInputs();
+                });
+
+                const tempAbsentBtn = document.getElementById(`temp-absent-btn-${index}`);
+                tempAbsentBtn.addEventListener('click', () => {
+                    openTempAbsenceModal(participants[index]);
                 });
             }
 
@@ -1572,9 +1759,19 @@
                         customEmojisMapping[newName] = customEmojisMapping[oldName]; 
                         delete customEmojisMapping[oldName]; 
                     }
+                    const absentUpdate = {};
                     if(absentGlobaux[oldName]) {
                         absentGlobaux[newName] = true;
                         delete absentGlobaux[oldName];
+                        absentUpdate[newName] = true;
+                        absentUpdate[oldName] = deleteField(); // vraie suppression côté Firestore
+                    }
+                    const tempAbsenceUpdate = {};
+                    if(absencesTemp[oldName]) {
+                        absencesTemp[newName] = absencesTemp[oldName];
+                        delete absencesTemp[oldName];
+                        tempAbsenceUpdate[newName] = absencesTemp[newName];
+                        tempAbsenceUpdate[oldName] = deleteField();
                     }
                     if(currentUser === oldName) { 
                         currentUser = newName; 
@@ -1582,7 +1779,10 @@
                         updateSidebarUserInfo(); 
                     }
 
-                    setDoc(doc(db, "planning", "global_team"), { names: participants, customEmojisMapping: customEmojisMapping, absentGlobaux: absentGlobaux }, { merge: true });
+                    const payload = { names: participants, customEmojisMapping: customEmojisMapping };
+                    if (Object.keys(absentUpdate).length) payload.absentGlobaux = absentUpdate;
+                    if (Object.keys(tempAbsenceUpdate).length) payload.absencesTemp = tempAbsenceUpdate;
+                    setDoc(doc(db, "planning", "global_team"), payload, { merge: true });
                 });
             }
         });
@@ -1768,15 +1968,17 @@
 
             // Pour les jours passés : tous les participants (absents inclus) pour que
             // les noms historiques apparaissent bien dans le select.
-            // Pour les jours futurs : seulement les actifs.
-            const poolForSelect = isPast ? participants : participants.filter(p => !absentGlobaux[p]);
+            // Pour les jours futurs : seulement les actifs CE jour-là précisément
+            // (absence permanente OU absence ponctuelle qui couvre cette date).
+            const thisThursdayDate = new Date(parseInt(year), monthIndex, thurs.dayOfMonth);
+            const poolForSelect = isPast ? participants : participants.filter(p => !isAbsentOnDate(p, thisThursdayDate));
             let selectPlat    = poolForSelect.map(p => `<option value="${p}" ${p===roles.plat?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
             let selectDessert = poolForSelect.map(p => `<option value="${p}" ${p===roles.dessert?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
             let selectRemp    = poolForSelect.map(p => `<option value="${p}" ${p===roles.remp?'selected':''}>${customEmojisMapping[p]||'🦊'} ${p}</option>`).join('');
 
-            const platAbsent    = absentGlobaux[roles.plat]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
-            const dessertAbsent = absentGlobaux[roles.dessert] ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
-            const rempAbsent    = absentGlobaux[roles.remp]    ? ' <span title="Absent permanent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const platAbsent    = isAbsentOnDate(roles.plat, thisThursdayDate)    ? ' <span title="Absent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const dessertAbsent = isAbsentOnDate(roles.dessert, thisThursdayDate) ? ' <span title="Absent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
+            const rempAbsent    = isAbsentOnDate(roles.remp, thisThursdayDate)    ? ' <span title="Absent" style="color:#f43f5e;font-size:0.7rem;">🚫</span>' : '';
 
             let presencesListHTML = presences.map(p => `${customEmojisMapping[p]||"🦊"} ${p}`).join(', ');
             const ratingStyle = isPresent ? "" : "style='opacity:0.35; cursor:not-allowed; pointer-events:none;'";

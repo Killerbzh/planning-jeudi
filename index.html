@@ -3429,5 +3429,10 @@
         if (e.key === 'Escape') closeLightbox();
     });
 </script>
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('sw.js');
+  }
+</script>
 </body>
 </html>

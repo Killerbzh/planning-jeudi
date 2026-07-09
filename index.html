@@ -1616,7 +1616,22 @@
     connectToMonth(currentMonth);
 
     function updateRoleManually(globalIndex, roleType, selectedValue) {
-        // Garde-fou : seul Lucas peut modifier Plat & Dessert, le rôle Remplaçant est libre pour tous
+        // Garde-fou n°1 : un jour déjà passé est verrouillé, quel que soit le rôle
+        // ou l'utilisateur. Ça évite qu'une modification manuelle (accidentelle ou
+        // non) vienne fausser l'historique gelé et les compteurs qui en découlent
+        // pour les jours futurs. Défense en profondeur : l'UI désactive déjà les
+        // menus concernés, mais on revérifie ici au cas où.
+        const thursdayDate = getThursdayDateFromGlobalIndex(globalIndex);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (thursdayDate) thursdayDate.setHours(0, 0, 0, 0);
+        if (thursdayDate && thursdayDate < today) {
+            alert("Ce jeudi est déjà passé : son historique est verrouillé et ne peut plus être modifié.");
+            generatePlanningCards();
+            return;
+        }
+
+        // Garde-fou n°2 : seul Lucas peut modifier Plat & Dessert, le rôle Remplaçant est libre pour tous
         const isSuperAdmin = (currentUser && currentUser.toLowerCase() === "lucas");
         if ((roleType === 'plat' || roleType === 'dessert') && !isSuperAdmin) {
             alert("Seul Lucas peut modifier le Plat Principal et le Dessert.");
@@ -1734,10 +1749,13 @@
             // Déterminer si ce jeudi est passé
             const isPast = isPastThursday(parseInt(year), monthIndex, thurs.dayOfMonth);
             const isSuperAdminRoles = (currentUser && currentUser.toLowerCase() === "lucas");
-            // Seul Lucas peut modifier Plat & Dessert
-            const canEditPlatDessert = isSuperAdminRoles;
-            // Le rôle Remplaçant reste modifiable par tout le monde
-            const canEditRemp = true;
+            // Seul Lucas peut modifier Plat & Dessert — et jamais sur un jour déjà passé
+            // (sinon ça fausse l'historique gelé et les compteurs qui en découlent).
+            const canEditPlatDessert = isSuperAdminRoles && !isPast;
+            // Le rôle Remplaçant reste modifiable par tout le monde, mais uniquement
+            // pour les jours à venir. Un jour passé est verrouillé, comme pour le
+            // recalcul automatique (voir rebuildRolesCache).
+            const canEditRemp = !isPast;
 
             const pVotes = Object.values(ratingsPlat);
             const avgP = pVotes.length ? (pVotes.reduce((a,b)=>a+b,0)/pVotes.length).toFixed(1) : "-";

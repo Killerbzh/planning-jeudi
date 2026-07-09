@@ -8,9 +8,16 @@ self.addEventListener('activate', (event) => {
   event.waitUntil(clients.claim());
 });
 
-// Stratégie simple : réseau d'abord, cache en secours (pour le mode hors-ligne basique)
 self.addEventListener('fetch', (event) => {
+  // EXCLUSION : On ignore toutes les requêtes liées à Firebase/Firestore
+  if (event.request.url.includes('firestore.googleapis.com') || 
+      event.request.url.includes('firebaseio.com') ||
+      event.request.url.includes('identitytoolkit.googleapis.com')) {
+    return; // Laisse la requête se faire normalement sans intervention du SW
+  }
+
   if (event.request.method !== 'GET') return;
+
   event.respondWith(
     fetch(event.request)
       .then((response) => {
@@ -22,7 +29,7 @@ self.addEventListener('fetch', (event) => {
   );
 });
 
-// ─── Notifications push (Firebase Cloud Messaging) en arrière-plan ───
+// ─── Notifications push (Firebase Cloud Messaging) ───
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
@@ -37,7 +44,6 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// Affiche la notification quand l'app/le navigateur est fermé ou en arrière-plan
 messaging.onBackgroundMessage((payload) => {
   const title = (payload.notification && payload.notification.title) || "Le Planning des Jeudis";
   const options = {
@@ -48,7 +54,6 @@ messaging.onBackgroundMessage((payload) => {
   self.registration.showNotification(title, options);
 });
 
-// Ouvre/refocus le site quand on clique sur la notification
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
   event.waitUntil(

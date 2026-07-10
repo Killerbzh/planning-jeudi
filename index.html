@@ -1282,16 +1282,68 @@
         const countsAll = {};
         allSorted.forEach(p => { countsAll[p] = { plat: 0, dessert: 0, remp: 0, total: 0 }; });
 
-        function pickLeastFrom(pool, counts, roleKey, exclude) {
+        // ─── Anti-répétition : une même personne ne doit pas être trop souvent ───
+        // sollicitée sur un temps court, quel que soit le rôle (plat, dessert OU
+        // remplaçant comptent comme "une participation"). Règles :
+        //   - jamais 2 fois sur MOINS DE 4 jeudis d'écart (≈ pas 2x dans le même mois)
+        //   - jamais plus de 2 fois sur une fenêtre glissante de 8 jeudis (≈ 2 mois)
+        // On s'appuie sur rolesCache, rempli au fur et à mesure, donc on ne regarde
+        // que les jeudis déjà traités AVANT l'index courant `i`.
+        const REPEAT_MIN_GAP = 4;     // jeudis d'écart minimum entre 2 participations
+        const REPEAT_WINDOW  = 8;     // fenêtre glissante (jeudis) pour le plafond
+        const REPEAT_MAX_IN_WINDOW = 2; // participations max autorisées dans la fenêtre
+
+        function wasAssignedAt(person, idx) {
+            const r = rolesCache[idx];
+            return !!r && (r.plat === person || r.dessert === person || r.remp === person);
+        }
+
+        function gapSinceLastAssignment(person, i) {
+            for (let back = 1; back <= REPEAT_WINDOW; back++) {
+                const idx = i - back;
+                if (idx < 0) break;
+                if (wasAssignedAt(person, idx)) return back;
+            }
+            return Infinity;
+        }
+
+        function countAssignmentsInWindow(person, i, window) {
+            let count = 0;
+            for (let back = 1; back <= window; back++) {
+                const idx = i - back;
+                if (idx < 0) break;
+                if (wasAssignedAt(person, idx)) count++;
+            }
+            return count;
+        }
+
+        function applyRepeatRules(available, i) {
+            let step1 = available.filter(p =>
+                gapSinceLastAssignment(p, i) > REPEAT_MIN_GAP &&
+                countAssignmentsInWindow(p, i, REPEAT_WINDOW) < REPEAT_MAX_IN_WINDOW
+            );
+            if (step1.length) return step1;
+
+            let step2 = available.filter(p => countAssignmentsInWindow(p, i, REPEAT_WINDOW) < REPEAT_MAX_IN_WINDOW);
+            if (step2.length) return step2;
+
+            let step3 = available.filter(p => gapSinceLastAssignment(p, i) > REPEAT_MIN_GAP);
+            if (step3.length) return step3;
+
+            return available;
+        }
+
+        function pickLeastFrom(pool, counts, roleKey, exclude, i) {
             const available = pool.filter(p => !exclude.includes(p));
-            available.sort((a, b) => {
+            const eligible = applyRepeatRules(available, i);
+            eligible.sort((a, b) => {
                 const dr = counts[a][roleKey] - counts[b][roleKey];
                 if (dr !== 0) return dr;
                 const dt = counts[a].total - counts[b].total;
                 if (dt !== 0) return dt;
                 return pool.indexOf(a) - pool.indexOf(b);
             });
-            return available[0] || "Aucun";
+            return eligible[0] || "Aucun";
         }
 
         const frozenUpdates = {}; // { monthId: { gIdx: roles } }
@@ -1310,9 +1362,9 @@
                     remp:    allMonthsOverrides[i].remp    || "Aucun"
                 };
             } else {
-                const plat    = pickLeastFrom(allSorted, countsAll, 'plat',    []);
-                const dessert = pickLeastFrom(allSorted, countsAll, 'dessert', [plat]);
-                const remp    = pickLeastFrom(allSorted, countsAll, 'remp',    [plat, dessert]);
+                const plat    = pickLeastFrom(allSorted, countsAll, 'plat',    [], i);
+                const dessert = pickLeastFrom(allSorted, countsAll, 'dessert', [plat], i);
+                const remp    = pickLeastFrom(allSorted, countsAll, 'remp',    [plat, dessert], i);
                 result = { plat, dessert, remp };
 
                 // Geler dans allMonthsOverrides pour ne plus jamais être modifié
@@ -1356,25 +1408,34 @@
         });
 
         for (let i = lastPastIndex + 1; i < totalThursdays; i++) {
+            const thursdayDateForDay = getThursdayDateFromGlobalIndex(i);
+            const dayPool = thursdayDateForDay
+                ? orderedActive.filter(p => !isAbsentOnDate(p, thursdayDateForDay))
+                : orderedActive;
+            const pool = dayPool.length ? dayPool : orderedActive; // filet de sécurité si tout le monde est absent ce jour-là
+
             let result;
             if (allMonthsOverrides[i]) {
-                result = {
-                    plat:    allMonthsOverrides[i].plat    || "Aucun",
-                    dessert: allMonthsOverrides[i].dessert || "Aucun",
-                    remp:    allMonthsOverrides[i].remp    || "Aucun"
-                };
-            } else {
-                // On retire en plus, pour CE jeudi précis, les personnes en
-                // absence ponctuelle (plage de dates) qui couvre cette date.
-                const thursdayDateForDay = getThursdayDateFromGlobalIndex(i);
-                const dayPool = thursdayDateForDay
-                    ? orderedActive.filter(p => !isAbsentOnDate(p, thursdayDateForDay))
-                    : orderedActive;
-                const pool = dayPool.length ? dayPool : orderedActive; // filet de sécurité si tout le monde est absent ce jour-là
+                // Un override sur un jour futur vient forcément d'une modification
+                // manuelle (seuls les jours PASSÉS sont gelés automatiquement).
+                // Si la personne choisie à la main est entre-temps devenue absente
+                // (permanente ou ponctuelle) sur cette date, on ne la garde pas :
+                // on recalcule uniquement le(s) rôle(s) concerné(s), et on laisse
+                // les autres rôles tels que l'admin les a fixés.
+                const ov = allMonthsOverrides[i];
+                result = { plat: ov.plat || "Aucun", dessert: ov.dessert || "Aucun", remp: ov.remp || "Aucun" };
 
-                const plat    = pickLeastFrom(pool, countsFuture, 'plat',    []);
-                const dessert = pickLeastFrom(pool, countsFuture, 'dessert', [plat]);
-                const remp    = pickLeastFrom(pool, countsFuture, 'remp',    [plat, dessert]);
+                const platStale    = result.plat    !== "Aucun" && thursdayDateForDay && isAbsentOnDate(result.plat, thursdayDateForDay);
+                const dessertStale = result.dessert !== "Aucun" && thursdayDateForDay && isAbsentOnDate(result.dessert, thursdayDateForDay);
+                const rempStale    = result.remp    !== "Aucun" && thursdayDateForDay && isAbsentOnDate(result.remp, thursdayDateForDay);
+
+                if (platStale)    result.plat    = pickLeastFrom(pool, countsFuture, 'plat',    [result.dessert, result.remp].filter(n => n && n !== "Aucun"), i);
+                if (dessertStale) result.dessert = pickLeastFrom(pool, countsFuture, 'dessert', [result.plat, result.remp].filter(n => n && n !== "Aucun"), i);
+                if (rempStale)    result.remp    = pickLeastFrom(pool, countsFuture, 'remp',    [result.plat, result.dessert].filter(n => n && n !== "Aucun"), i);
+            } else {
+                const plat    = pickLeastFrom(pool, countsFuture, 'plat',    [], i);
+                const dessert = pickLeastFrom(pool, countsFuture, 'dessert', [plat], i);
+                const remp    = pickLeastFrom(pool, countsFuture, 'remp',    [plat, dessert], i);
                 result = { plat, dessert, remp };
             }
 
